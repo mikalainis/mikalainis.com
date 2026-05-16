@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 const TAGS = ['AI/ML Leader', 'GenAI / LLM Expert', 'Data Engineer', 'BI Strategist']
 
 const STATS = [
@@ -129,17 +131,13 @@ export default function Hero() {
                 <div className="absolute -inset-16 rounded-full border border-sky-400/4" />
                 <div className="absolute -inset-3 rounded-full bg-sky-400/8 blur-2xl" />
                 <div className="relative w-64 h-64 rounded-full bg-gradient-to-br from-slate-800 to-slate-750 border-2 border-sky-400/25 flex flex-col items-center justify-center overflow-hidden shadow-2xl shadow-sky-400/10">
-                  {/*
-                    TO ADD YOUR PHOTO:
-                    1. Copy your photo to public/photo.jpg
-                    2. Replace this block with:
-                       <Image src="/photo.jpg" alt="Paulius Mikalainis" fill className="object-cover" />
-                  */}
-                  <div className="text-6xl font-extrabold text-sky-400 tracking-tight select-none">PM</div>
-                  <div className="text-slate-600 text-xs mt-2 text-center px-6 leading-relaxed">
-                    Add photo to<br />
-                    <code className="text-slate-500 text-xs">public/photo.jpg</code>
-                  </div>
+                  <Image
+                    src="/photo.jpg"
+                    alt="Paulius Mikalainis"
+                    fill
+                    className="object-cover object-top"
+                    priority
+                  />
                 </div>
               </div>
             </div>
