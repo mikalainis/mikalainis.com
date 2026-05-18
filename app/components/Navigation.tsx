@@ -50,8 +50,16 @@ export default function Navigation() {
             </a>
           ))}
           <a
-            href="mailto:pmikalainis@gmail.com"
+            href="/resume-builder.html"
+            target="_blank"
+            rel="noreferrer"
             className="bg-sky-400 text-slate-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-sky-300 transition-all hover:shadow-lg hover:shadow-sky-400/20"
+          >
+            Resume Builder
+          </a>
+          <a
+            href="mailto:pmikalainis@gmail.com"
+            className="bg-slate-50 text-slate-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-100 transition-all hover:shadow-lg hover:shadow-slate-400/20"
           >
             Get In Touch
           </a>
@@ -88,8 +96,17 @@ export default function Navigation() {
               </a>
             ))}
             <a
-              href="mailto:pmikalainis@gmail.com"
+              href="/resume-builder.html"
+              target="_blank"
+              rel="noreferrer"
               className="mt-3 bg-sky-400 text-slate-900 px-4 py-3 rounded-lg text-sm font-bold text-center hover:bg-sky-300 transition-colors"
+              onClick={() => setMenuOpen(false)}
+            >
+              Resume Builder
+            </a>
+            <a
+              href="mailto:pmikalainis@gmail.com"
+              className="mt-3 bg-slate-50 text-slate-900 px-4 py-3 rounded-lg text-sm font-bold text-center hover:bg-slate-100 transition-colors"
               onClick={() => setMenuOpen(false)}
             >
               Get In Touch
