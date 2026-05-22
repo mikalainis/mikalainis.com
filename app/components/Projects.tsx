@@ -7,17 +7,17 @@ const PROJECTS = [
   },
   {
     title: 'Enterprise Analytics Automation — Verizon EPM',
-    tech: 'Python · ETL',
+    tech: 'Oracle EPM · Python · ETL',
     outcomes: '83% complexity reduction, 50% faster delivery, Enterprise-scale',
   },
   {
     title: 'Customer Profitability Intelligence Platform',
-    tech: 'Tableau · ML',
+    tech: 'Qlik · ML',
     outcomes: 'C-suite dashboards, Python migration, Retention strategy',
   },
   {
     title: 'Predictive Promotional Pricing Model',
-    tech: 'Predictive Modeling · NLP',
+    tech: 'Predictive Modeling · Python ML',
     outcomes: '$14M/mo cost avoidance, Regression modeling, Upsell strategy',
   },
 ]
