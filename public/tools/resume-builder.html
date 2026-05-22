@@ -935,9 +935,9 @@ function initGoogleLibraries() {
                         googleAccessToken = savedToken;
                         gapi.client.setToken({ access_token: savedToken });
                         try {
-                            const r = await gapi.client.request({
-                                path: 'https://www.googleapis.com/oauth2/v2/userinfo'
-                            });
+                            const uiR = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+                            const r = { result: await uiR.json() };
+                            if (!uiR.ok) throw new Error('token invalid');
                             setGoogleConnected(true, r.result);
                             loadDriveFiles();
                             startAutoScanScheduler();
@@ -1046,10 +1046,9 @@ function doConnectGoogle() {
             // Fetch and cache user profile
             let profile = {};
             try {
-                const r = await gapi.client.request({
-                    path: 'https://www.googleapis.com/oauth2/v2/userinfo'
-                });
-                profile = r.result;
+                const uiResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo',
+                    { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+                profile = await uiResp.json();
                 setLocalStorageSafe('google_user_profile', JSON.stringify(profile));
             } catch(e) {}
 
@@ -1275,19 +1274,14 @@ async function showFolderPickerModal(parentId, parentName) {
             ? `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
             : `'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
 
-        const resp = await gapi.client.request({
-            path: 'https://www.googleapis.com/drive/v3/files',
-            params: { q, fields: 'files(id,name)', orderBy: 'name', pageSize: 50 }
-        });
-
-        // gapi.client.request returns {result, body, headers, status}
-        // Parse result — may be in resp.result or need JSON.parse(resp.body)
-        let data = resp.result;
-        if (!data || !data.files) {
-            try { data = JSON.parse(resp.body); } catch(e2) {}
-        }
-
-        const folders = (data && data.files) ? data.files : [];
+        const params = new URLSearchParams({ q, fields: 'files(id,name)', orderBy: 'name', pageSize: 50 });
+        const resp = await fetch(
+            `https://www.googleapis.com/drive/v3/files?${params}`,
+            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+        );
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || `HTTP ${resp.status}`);
+        const folders = data.files || [];
         const body = document.getElementById('fp-body');
         if (!body) return;
 
@@ -1479,16 +1473,28 @@ async function runBackgroundScan() {
     // Reuse the startEmailScan logic but silently
     try {
         const query   = 'subject:(application OR applied OR interview OR offer OR rejected OR "thank you for applying" OR "we received your application") newer_than:4d';
-        const listResp = await gapi.client.request({ path:'https://www.googleapis.com/gmail/v1/users/me/messages', params:{ q: query, maxResults: 50 } });
-        const messages = listResp.result.messages || [];
+        const bgListParams = new URLSearchParams({ q: query, maxResults: 50 });
+        const bgListResp = await fetch(
+            `https://www.googleapis.com/gmail/v1/users/me/messages?${bgListParams}`,
+            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+        );
+        const bgListData = await bgListResp.json();
+        if (!bgListResp.ok) throw new Error(bgListData.error?.message || `HTTP ${bgListResp.status}`);
+        const messages = bgListData.messages || [];
         if (!messages.length) return;
 
         const snippets = await Promise.all(messages.map(m =>
-            gapi.client.request({ path:`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}`, params:{ format:'metadata', metadataHeaders:'Subject,From,Date' } }).then(r => {
-                const h = r.result.payload?.headers||[];
-                const get = n => (h.find(x=>x.name===n)||{}).value||'';
-                return { id:m.id, subject:get('Subject'), from:get('From'), date:get('Date'), snippet:r.result.snippet||'' };
-            }).catch(()=>null)
+            (async () => {
+                try {
+                    const p = new URLSearchParams({ format:'metadata', metadataHeaders:'Subject,From,Date' });
+                    const r = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}?${p}`, { headers:{ Authorization:`Bearer ${googleAccessToken}` } });
+                    const msg = await r.json();
+                    if (!r.ok) return null;
+                    const h = msg.payload?.headers||[];
+                    const get = n => (h.find(x=>x.name===n)||{}).value||'';
+                    return { id:m.id, subject:get('Subject'), from:get('From'), date:get('Date'), snippet:msg.snippet||'' };
+                } catch(e) { return null; }
+            })()
         ));
 
         const valid = snippets.filter(Boolean);
@@ -1599,8 +1605,14 @@ async function startEmailScan() {
         scanLog(`📧 Searching Gmail for: "${query}"...`);
         setScanProgress(5, 'Fetching email list...');
 
-        const listResp = await gapi.client.request({ path:'https://www.googleapis.com/gmail/v1/users/me/messages', params:{ q: query, maxResults: limit } });
-        const messages = listResp.result.messages || [];
+        const gmailListParams = new URLSearchParams({ q: query, maxResults: limit });
+        const gmailListResp = await fetch(
+            `https://www.googleapis.com/gmail/v1/users/me/messages?${gmailListParams}`,
+            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+        );
+        const gmailListData = await gmailListResp.json();
+        if (!gmailListResp.ok) throw new Error(gmailListData.error?.message || `HTTP ${gmailListResp.status}`);
+        const messages = gmailListData.messages || [];
         scanLog(`Found ${messages.length} emails to analyze.`, 'text-cyan-300');
 
         if (!messages.length) {
@@ -1617,11 +1629,17 @@ async function startEmailScan() {
             const pct = Math.round(10 + (i / messages.length) * 40);
             setScanProgress(pct, `Reading emails ${i+1}–${Math.min(i+batchSize, messages.length)}...`);
             const fetched = await Promise.all(batch.map(m =>
-                gapi.client.request({ path:`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}`, params:{ format:'metadata', metadataHeaders:'Subject,From,Date' } }).then(r => {
-                    const headers = r.result.payload?.headers || [];
-                    const get = name => (headers.find(h => h.name === name) || {}).value || '';
-                    return { id:m.id, subject:get('Subject'), from:get('From'), date:get('Date'), snippet:r.result.snippet||'' };
-                }).catch(() => null)
+                (async () => {
+                    try {
+                        const p = new URLSearchParams({ format:'metadata', metadataHeaders:'Subject,From,Date' });
+                        const r = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}?${p}`, { headers:{ Authorization:`Bearer ${googleAccessToken}` } });
+                        const msg = await r.json();
+                        if (!r.ok) return null;
+                        const headers = msg.payload?.headers || [];
+                        const get = name => (headers.find(h => h.name === name) || {}).value || '';
+                        return { id:m.id, subject:get('Subject'), from:get('From'), date:get('Date'), snippet:msg.snippet||'' };
+                    } catch(e) { return null; }
+                })()
             ));
             snippets.push(...fetched.filter(Boolean));
         }
@@ -1756,16 +1774,19 @@ async function loadDriveFiles() {
     try {
         // Default to Applications folder
         const targetFolder = selectedDriveFolderId || APPLICATIONS_FOLDER_ID;
-        const resp = await gapi.client.request({
-            path: 'https://www.googleapis.com/drive/v3/files',
-            params: { q:`'${targetFolder}' in parents and trashed=false`, fields:'files(id,name,modifiedTime,webViewLink,mimeType)', orderBy:'modifiedTime desc', pageSize:30 }
+        const driveParams = new URLSearchParams({
+            q: `'${targetFolder}' in parents and trashed=false`,
+            fields: 'files(id,name,modifiedTime,webViewLink,mimeType)',
+            orderBy: 'modifiedTime desc',
+            pageSize: 30
         });
-        // Parse result safely
-        let driveData = resp.result;
-        if (!driveData || !driveData.files) {
-            try { driveData = JSON.parse(resp.body); } catch(e2) {}
-        }
-        const files = (driveData && driveData.files) ? driveData.files : [];
+        const driveResp = await fetch(
+            `https://www.googleapis.com/drive/v3/files?${driveParams}`,
+            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+        );
+        const driveData = await driveResp.json();
+        if (!driveResp.ok) throw new Error(driveData.error?.message || `HTTP ${driveResp.status}`);
+        const files = driveData.files || [];
         if (!files.length) {
             el.innerHTML = '<span class="text-gray-400 italic text-xs">No files found in this folder.</span>';
             return;
