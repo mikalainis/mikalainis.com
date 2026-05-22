@@ -2,7 +2,7 @@ const PROJECTS = [
   {
     title: 'AI-Powered Resume Builder',
     tech: 'JavaScript · Tailwind · Gemini AI',
-    link: '/resume-builder.html',
+    link: '/tools/resume-builder.html',
     outcomes: 'Gemini AI integration, PDF export, Job match scoring',
   },
   {
