@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <!-- Google API: api.js fires gapiReady() when loaded; gsi/client loads in parallel -->
-    <script src="https://apis.google.com/js/api.js?onload=gapiReady"></script>
+    <script src="https://apis.google.com/js/api.js" async></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <style>
@@ -907,64 +907,71 @@ let isGapiReady = false;
 let selectedDriveFolderId = null;
 let selectedDriveFolderName = null;
 
-// ── Init — called by api.js?onload=gapiReady (not DOMContentLoaded) ──
-// gapiReady is the global callback fired by api.js once it's fully parsed.
-// It then loads the gapi.client sub-library and discovery docs.
-// We also wait for the GSI library (google.accounts) which loads in parallel;
-// isGsiReady tracks that so connectGoogle() never calls it before it exists.
+// ── Init — poll for both gapi and google.accounts to be ready ──
+// Both api.js and gsi/client load async. We poll for each independently
+// so isGapiReady and isGsiReady flip as soon as they are available,
+// regardless of load order. Max wait: 15 seconds each.
 let isGsiReady = false;
 
-window.gapiReady = function() {
-    gapi.load('client', async () => {
-        try {
-            // No discovery docs — we call REST endpoints directly,
-            // which avoids 2 extra round-trips and makes isGapiReady flip faster.
-            await gapi.client.init({});
-            isGapiReady = true;
-
-            // Update connect button to show it's ready (remove any spinner)
-            const btn = document.getElementById('google-connect-btn');
-            if (btn && !googleAccessToken) {
-                btn.disabled = false;
-            }
-
-            // Try to restore a valid saved session
-            const savedToken  = getLocalStorageSafe('google_access_token');
-            const tokenExpiry = parseInt(getLocalStorageSafe('google_token_expiry') || '0');
-
-            if (savedToken && Date.now() < tokenExpiry) {
-                googleAccessToken = savedToken;
-                gapi.client.setToken({ access_token: savedToken });
+function initGoogleLibraries() {
+    // Poll for gapi.client
+    let gapiAttempts = 0;
+    function waitForGapi() {
+        if (typeof gapi !== 'undefined') {
+            gapi.load('client', async () => {
                 try {
-                    const r = await gapi.client.request({
-                        path: 'https://www.googleapis.com/oauth2/v2/userinfo'
-                    });
-                    setGoogleConnected(true, r.result);
-                    loadDriveFiles();
-                    startAutoScanScheduler();
+                    await gapi.client.init({});
+                    isGapiReady = true;
+                    console.log('[Google] gapi.client ready');
+
+                    // Re-enable connect button if it was spinning
+                    const btn = document.getElementById('google-connect-btn');
+                    if (btn && !googleAccessToken) btn.disabled = false;
+
+                    // Try to restore saved session
+                    const savedToken  = getLocalStorageSafe('google_access_token');
+                    const tokenExpiry = parseInt(getLocalStorageSafe('google_token_expiry') || '0');
+                    if (savedToken && Date.now() < tokenExpiry) {
+                        googleAccessToken = savedToken;
+                        gapi.client.setToken({ access_token: savedToken });
+                        try {
+                            const r = await gapi.client.request({
+                                path: 'https://www.googleapis.com/oauth2/v2/userinfo'
+                            });
+                            setGoogleConnected(true, r.result);
+                            loadDriveFiles();
+                            startAutoScanScheduler();
+                        } catch(e) {
+                            clearGoogleSession();
+                        }
+                    }
                 } catch(e) {
-                    clearGoogleSession(); // token rejected server-side
+                    console.warn('[Google] gapi.client.init error:', e);
                 }
-            }
-        } catch(e) {
-            console.warn('GAPI client init error:', e);
+            });
+        } else if (gapiAttempts++ < 150) {
+            setTimeout(waitForGapi, 100);
+        } else {
+            console.warn('[Google] gapi failed to load after 15s');
         }
-    });
-};
-
-// GSI library fires this once accounts.google.com/gsi/client is parsed.
-// We set a flag so connectGoogle() knows it's safe to call initTokenClient.
-window.gsiReady = function() { isGsiReady = true; };
-
-// Attach gsiReady to the GSI script onload (GSI doesn't support ?onload=).
-// We do this by polling — GSI is tiny and usually ready within ms.
-(function waitForGsi() {
-    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-        isGsiReady = true;
-    } else {
-        setTimeout(waitForGsi, 100);
     }
-})();
+
+    // Poll for google.accounts.oauth2
+    let gsiAttempts = 0;
+    function waitForGsi() {
+        if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+            isGsiReady = true;
+            console.log('[Google] GSI ready');
+        } else if (gsiAttempts++ < 150) {
+            setTimeout(waitForGsi, 100);
+        } else {
+            console.warn('[Google] GSI failed to load after 15s');
+        }
+    }
+
+    waitForGapi();
+    waitForGsi();
+}
 
 // ── Connect ───────────────────────────────────────────────────
 function connectGoogle() {
@@ -1007,9 +1014,21 @@ function connectGoogle() {
 
 function doConnectGoogle() {
     // Always create a fresh token client
+    // error_callback catches popup-blocked and other init errors
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
         scope: GOOGLE_SCOPES,
+        error_callback: (err) => {
+            console.error('Token client error:', err);
+            if (err.type === 'popup_failed_to_open' || err.type === 'popup_closed') {
+                showPopupBlockedGuide();
+            } else {
+                showToast('Google sign-in error: ' + (err.message || err.type), true);
+            }
+            // Re-enable the connect button
+            const btn = document.getElementById('google-connect-btn');
+            if (btn) { btn.disabled = false; btn.innerHTML = originalBtnHtml || 'Sign in with Google'; }
+        },
         callback: async (response) => {
             if (response.error) {
                 showGoogleError(response.error);
@@ -1041,7 +1060,65 @@ function doConnectGoogle() {
         }
     });
 
+    // Store original button HTML so we can restore it on error
+    const btn = document.getElementById('google-connect-btn');
+    const originalBtnHtml = btn ? btn.innerHTML : '';
+
+    // prompt: '' means use existing session if available, 
+    // 'select_account' forces the account picker every time
     tokenClient.requestAccessToken({ prompt: 'select_account' });
+}
+
+// ── Popup blocked guide ───────────────────────────────────────
+function showPopupBlockedGuide() {
+    document.getElementById('popup-blocked-guide')?.remove();
+    const el = document.createElement('div');
+    el.id = 'popup-blocked-guide';
+    el.className = 'no-print';
+    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;' +
+        'max-width:380px;width:90%;background:#1e293b;color:#e2e8f0;border-radius:16px;padding:24px;' +
+        'box-shadow:0 20px 60px rgba(0,0,0,0.5);border:1px solid #334155;font-size:14px;line-height:1.6;';
+    el.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+            <div>
+                <div style="font-size:24px;margin-bottom:4px;">🚫</div>
+                <div style="font-weight:700;font-size:16px;color:#f1f5f9;">Popup Blocked</div>
+            </div>
+            <button type="button" onclick="document.getElementById('popup-blocked-guide').remove()"
+                style="background:none;border:none;color:#64748b;cursor:pointer;font-size:22px;line-height:1;padding:0;margin-top:-4px;">×</button>
+        </div>
+        <p style="color:#94a3b8;margin:0 0 16px;">Your browser blocked the Google sign-in popup. Allow popups for this site:</p>
+        <div style="background:#0f172a;border-radius:10px;padding:14px;margin-bottom:16px;">
+            <div style="font-weight:600;color:#e2e8f0;margin-bottom:10px;">Chrome / Edge:</div>
+            <ol style="margin:0;padding-left:18px;color:#94a3b8;display:flex;flex-direction:column;gap:6px;">
+                <li>Click the <strong style="color:#e2e8f0;">🚫 icon</strong> in the address bar</li>
+                <li>Select <strong style="color:#e2e8f0;">"Always allow popups"</strong></li>
+                <li>Click <strong style="color:#e2e8f0;">Done</strong> — page reloads automatically</li>
+            </ol>
+        </div>
+        <div style="background:#0f172a;border-radius:10px;padding:14px;margin-bottom:16px;">
+            <div style="font-weight:600;color:#e2e8f0;margin-bottom:10px;">Safari:</div>
+            <ol style="margin:0;padding-left:18px;color:#94a3b8;display:flex;flex-direction:column;gap:6px;">
+                <li>Go to <strong style="color:#e2e8f0;">Settings → Websites → Pop-ups</strong></li>
+                <li>Find <strong style="color:#e2e8f0;">mikalainis.com</strong> → set to <strong style="color:#e2e8f0;">Allow</strong></li>
+            </ol>
+        </div>
+        <button type="button"
+            onclick="document.getElementById('popup-blocked-guide').remove(); connectGoogle();"
+            style="width:100%;background:#6366f1;color:white;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;font-size:14px;margin-top:4px;">
+            Try Again →
+        </button>
+    `;
+    // Dark backdrop
+    const backdrop = document.createElement('div');
+    backdrop.id = 'popup-blocked-backdrop';
+    backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99998;';
+    backdrop.onclick = () => {
+        el.remove();
+        backdrop.remove();
+    };
+    document.body.appendChild(backdrop);
+    document.body.appendChild(el);
 }
 
 // ── Disconnect ────────────────────────────────────────────────
@@ -1198,27 +1275,42 @@ async function showFolderPickerModal(parentId, parentName) {
             ? `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
             : `'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
 
-        const resp = await gapi.client.request({ path:'https://www.googleapis.com/drive/v3/files', params:{ q, fields:'files(id,name)', orderBy:'name', pageSize:50 } });
-        const folders = resp.result.files || [];
+        const resp = await gapi.client.request({
+            path: 'https://www.googleapis.com/drive/v3/files',
+            params: { q, fields: 'files(id,name)', orderBy: 'name', pageSize: 50 }
+        });
+
+        // gapi.client.request returns {result, body, headers, status}
+        // Parse result — may be in resp.result or need JSON.parse(resp.body)
+        let data = resp.result;
+        if (!data || !data.files) {
+            try { data = JSON.parse(resp.body); } catch(e2) {}
+        }
+
+        const folders = (data && data.files) ? data.files : [];
         const body = document.getElementById('fp-body');
         if (!body) return;
 
         if (folders.length === 0) {
             body.innerHTML = '<p class="text-sm text-gray-400 text-center py-6 italic">No sub-folders here.</p>';
         } else {
-            body.innerHTML = folders.map(f => `
+            body.innerHTML = folders.map(f => {
+                const safeName = (f.name || '').replace(/'/g, "\'").replace(/"/g, '&quot;');
+                return `
                 <div class="flex items-center justify-between py-2 px-2 hover:bg-gray-50 rounded-lg group cursor-pointer border-b border-gray-50 last:border-0"
-                    onclick="showFolderPickerModal('${f.id}','${f.name.replace(/'/g,"\\'")}')">
+                    onclick="showFolderPickerModal('${f.id}', decodeURIComponent('${encodeURIComponent(f.name || '')}'))">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <svg class="w-4 h-4 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z"/></svg>
                         <span class="text-sm text-gray-800 truncate font-medium">${f.name}</span>
                     </div>
                     <svg class="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         }
     } catch(e) {
+        console.error('[FolderPicker] Error:', e);
         const body = document.getElementById('fp-body');
-        if (body) body.innerHTML = `<p class="text-sm text-red-500 text-center py-6">Error loading folders: ${e.message}</p>`;
+        if (body) body.innerHTML = `<p class="text-sm text-red-500 text-center py-6">Error loading folders: ${e.message || 'check console for details'}</p>`;
     }
 }
 
@@ -1664,8 +1756,16 @@ async function loadDriveFiles() {
     try {
         // Default to Applications folder
         const targetFolder = selectedDriveFolderId || APPLICATIONS_FOLDER_ID;
-        const resp = await gapi.client.request({ path:'https://www.googleapis.com/drive/v3/files', params:{ q:`'${targetFolder}' in parents and trashed=false`, fields:'files(id,name,modifiedTime,webViewLink,mimeType)', orderBy:'modifiedTime desc', pageSize:30 } });
-        const files = resp.result.files || [];
+        const resp = await gapi.client.request({
+            path: 'https://www.googleapis.com/drive/v3/files',
+            params: { q:`'${targetFolder}' in parents and trashed=false`, fields:'files(id,name,modifiedTime,webViewLink,mimeType)', orderBy:'modifiedTime desc', pageSize:30 }
+        });
+        // Parse result safely
+        let driveData = resp.result;
+        if (!driveData || !driveData.files) {
+            try { driveData = JSON.parse(resp.body); } catch(e2) {}
+        }
+        const files = (driveData && driveData.files) ? driveData.files : [];
         if (!files.length) {
             el.innerHTML = '<span class="text-gray-400 italic text-xs">No files found in this folder.</span>';
             return;
@@ -1951,7 +2051,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
     loadApplications();
-    // NOTE: Google API init is triggered by api.js?onload=gapiReady — not here.
+    // Start polling for Google API libraries to become ready
+    initGoogleLibraries();
 });
 
 function getLocalStorageSafe(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
