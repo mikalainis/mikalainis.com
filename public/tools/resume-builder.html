@@ -1470,8 +1470,8 @@ function addApplication(app) {
     const exists = applications.find(a =>
         (a.company + '|' + a.role).toLowerCase().trim() === key
     );
-    // Status upgrade priority: rejected=2, confirmed=2, in_progress=1
-    const rank = { confirmed:2, rejected:2, in_progress:1 };
+    // Status upgrade priority: rejected=3 (final) > confirmed=2 > in_progress=1
+    const rank = { rejected:3, confirmed:2, in_progress:1 };
     if (exists) {
         if ((rank[app.status]||0) >= (rank[exists.status]||0)) {
             exists.status      = app.status;
@@ -1691,6 +1691,15 @@ async function startEmailScan() {
     const finalQuery = query + dateFilter;
 
     try {
+        // Clear all previous gmail-sourced entries before fresh scan
+        // Manual entries are preserved
+        // Keep only manually-added entries; clear gmail + drive + seed entries
+        const manualEntries = applications.filter(a => a.source === 'manual');
+        applications = manualEntries;
+        saveApplications();
+        renderDashboard(); // reset counts to manual-only baseline
+        scanLog(`🗑 Cleared previous scan results (kept ${manualEntries.length} manual entries)`,'text-slate-400');
+
         scanLog(`📧 Searching Gmail for: "${finalQuery.slice(0,80)}${finalQuery.length>80?'...':''}"...`);
         setScanProgress(5, 'Fetching email list...');
 
@@ -1801,6 +1810,12 @@ ${emailData}`;
         saveApplications();
         renderDashboard();
         setScanProgress(100, 'Scan complete!');
+
+        // Summary counts
+        const confirmed  = applications.filter(a => a.status === 'confirmed').length;
+        const inProgress = applications.filter(a => a.status === 'in_progress').length;
+        const rejected   = applications.filter(a => a.status === 'rejected').length;
+        scanLog(`\n📊 Results: ${applications.length} total — ${confirmed} confirmed · ${inProgress} in progress · ${rejected} rejected`, 'text-emerald-300');
         setLocalStorageSafe(AUTOSCAN_KEY, String(Date.now()));
         updateCountdownDisplay();
         scanLog(`\n🎉 Done! Found ${totalFound} job application emails.`, 'text-emerald-400');
