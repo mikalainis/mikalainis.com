@@ -734,6 +734,52 @@
             <button type="button" onclick="closeScanModal()" class="text-gray-400 hover:text-gray-600 cursor-pointer text-xl font-bold leading-none">×</button>
         </div>
         <div class="p-6 flex flex-col gap-4">
+            <!-- Smart query presets -->
+            <div>
+                <label class="text-xs font-semibold text-gray-600 block mb-2">Search preset</label>
+                <div class="grid grid-cols-2 gap-2 mb-3" id="preset-buttons">
+                    <button type="button" onclick="setQueryPreset('smart')"
+                        data-preset="smart"
+                        class="preset-btn active text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-emerald-600 text-white border-emerald-600">
+                        ⚡ Smart (recommended)
+                    </button>
+                    <button type="button" onclick="setQueryPreset('confirmations')"
+                        data-preset="confirmations"
+                        class="preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-white text-gray-600 border-gray-200 hover:border-gray-400">
+                        ✓ Confirmations only
+                    </button>
+                    <button type="button" onclick="setQueryPreset('rejections')"
+                        data-preset="rejections"
+                        class="preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-white text-gray-600 border-gray-200 hover:border-gray-400">
+                        ✗ Rejections only
+                    </button>
+                    <button type="button" onclick="setQueryPreset('interviews')"
+                        data-preset="interviews"
+                        class="preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-white text-gray-600 border-gray-200 hover:border-gray-400">
+                        📅 Interviews only
+                    </button>
+                    <button type="button" onclick="setQueryPreset('custom')"
+                        data-preset="custom"
+                        class="preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-white text-gray-600 border-gray-200 hover:border-gray-400 col-span-2">
+                        ✎ Custom query
+                    </button>
+                </div>
+
+                <!-- Query preview / custom input -->
+                <div id="query-preview" class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 mb-3">
+                    <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Gmail query</p>
+                    <p id="query-preview-text" class="text-xs font-mono text-slate-700 break-all leading-relaxed"></p>
+                </div>
+                <div id="custom-query-row" class="hidden mb-3">
+                    <input type="text" id="scan-query"
+                        class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-mono"
+                        placeholder="Enter Gmail search query..."
+                        oninput="document.getElementById('query-preview-text').textContent = this.value">
+                </div>
+                <!-- Hidden input that holds the active query for scan -->
+                <input type="hidden" id="scan-query-active" value="">
+            </div>
+
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="text-xs font-semibold text-gray-600 block mb-1">Max emails to scan</label>
@@ -745,8 +791,14 @@
                     </select>
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-gray-600 block mb-1">Search query (optional)</label>
-                    <input type="text" id="scan-query" value="job application" class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-300" placeholder="e.g. application OR interview">
+                    <label class="text-xs font-semibold text-gray-600 block mb-1">Date range</label>
+                    <select id="scan-date-range" class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none">
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d" selected>Last 30 days</option>
+                        <option value="90d">Last 90 days</option>
+                        <option value="180d">Last 6 months</option>
+                        <option value="all">All time</option>
+                    </select>
                 </div>
             </div>
             <div class="bg-gray-900 rounded-xl p-4 min-h-[140px] overflow-y-auto">
@@ -1591,6 +1643,8 @@ function openScanModal() {
     document.getElementById('scan-progress-label').textContent = 'Ready';
     document.getElementById('start-scan-btn').disabled = false;
     document.getElementById('start-scan-btn').textContent = 'Start Scan';
+    // Init smart preset
+    setTimeout(() => setQueryPreset('smart'), 50);
 }
 
 function closeScanModal() {
@@ -1625,13 +1679,22 @@ async function startEmailScan() {
     document.getElementById('scan-log').innerHTML = '';
 
     const limit = parseInt(document.getElementById('scan-limit').value);
-    const query = document.getElementById('scan-query').value.trim() || 'job application';
+    // Use the active preset query, falling back to custom input or default
+    const activeQueryEl = document.getElementById('scan-query-active');
+    const customQueryEl = document.getElementById('scan-query');
+    let query = (activeQueryEl?.value || customQueryEl?.value || '').trim();
+    if (!query) query = SCAN_QUERY_PRESETS.smart;
+
+    // Apply date range filter
+    const dateRange = document.getElementById('scan-date-range')?.value || '30d';
+    const dateFilter = dateRange !== 'all' ? ` newer_than:${dateRange}` : '';
+    const finalQuery = query + dateFilter;
 
     try {
-        scanLog(`📧 Searching Gmail for: "${query}"...`);
+        scanLog(`📧 Searching Gmail for: "${finalQuery.slice(0,80)}${finalQuery.length>80?'...':''}"...`);
         setScanProgress(5, 'Fetching email list...');
 
-        const gmailListParams = new URLSearchParams({ q: query, maxResults: limit });
+        const gmailListParams = new URLSearchParams({ q: finalQuery, maxResults: limit });
         const gmailListResp = await fetch(
             `https://www.googleapis.com/gmail/v1/users/me/messages?${gmailListParams}`,
             { headers: { Authorization: `Bearer ${googleAccessToken}` } }
@@ -1866,6 +1929,54 @@ function copyCoverLetter() {
             document.body.removeChild(ta);
             showToast('Copied!');
         });
+}
+
+
+// ============================================================
+// SCAN QUERY PRESETS
+// ============================================================
+const SCAN_QUERY_PRESETS = {
+    smart: `(from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:taleo.net OR from:adp.com OR from:icims.com OR from:smartrecruiters.com OR from:jobvite.com OR from:successfactors.com OR from:brassring.com OR from:candidatecare.com OR from:indeedapply.com OR from:linkedin.com OR from:indeed.com OR from:ziprecruiter.com) OR (subject:("thank you for applying") OR subject:("your application") OR subject:("application received") OR subject:("application for") OR subject:("we received your application") OR subject:("application update") OR subject:("interview") OR subject:("job offer") OR subject:("offer letter") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("position has been filled") OR subject:("other candidates"))`,
+
+    confirmations: `subject:("thank you for applying") OR subject:("application received") OR subject:("we received your application") OR subject:("your application for") OR subject:("successfully received") OR subject:("application submitted")`,
+
+    rejections: `subject:("unfortunately") OR subject:("not moving forward") OR subject:("other candidates") OR subject:("position has been filled") OR subject:("not selected") OR subject:("decided to move forward with other") OR subject:("not a match") OR subject:("application update")`,
+
+    interviews: `subject:("interview") OR subject:("next steps") OR subject:("phone screen") OR subject:("technical screen") OR subject:("assessment") OR subject:("hiring manager") OR subject:("schedule a") OR subject:("onsite") OR subject:("virtual interview") OR subject:("coding challenge")`,
+
+    custom: ''
+};
+
+function setQueryPreset(preset) {
+    // Update button styles
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        const isActive = btn.dataset.preset === preset;
+        btn.className = 'preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors ' +
+            (isActive ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400') +
+            (btn.dataset.preset === 'custom' ? ' col-span-2' : '');
+    });
+
+    const customRow = document.getElementById('custom-query-row');
+    const previewText = document.getElementById('query-preview-text');
+    const activeInput = document.getElementById('scan-query-active');
+
+    if (preset === 'custom') {
+        customRow?.classList.remove('hidden');
+        const customVal = document.getElementById('scan-query')?.value || '';
+        if (previewText) previewText.textContent = customVal || 'Type your query above';
+        if (activeInput) activeInput.value = customVal;
+    } else {
+        customRow?.classList.add('hidden');
+        const q = SCAN_QUERY_PRESETS[preset] || SCAN_QUERY_PRESETS.smart;
+        if (previewText) previewText.textContent = q;
+        if (activeInput) activeInput.value = q;
+    }
+}
+
+// Init preset on modal open
+function initScanModal() {
+    setQueryPreset('smart');
 }
 
 // ============================================================
