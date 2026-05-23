@@ -1574,7 +1574,7 @@ async function runBackgroundScan() {
 
     // Reuse the startEmailScan logic but silently
     try {
-        const query   = `${PRIMARY_INBOX} (subject:("thank you for applying") OR subject:("application received") OR subject:("interview") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("offer") OR from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:adp.com OR from:icims.com OR from:smartrecruiters.com) newer_than:4d`;
+                const query = `${PRIMARY_INBOX} (from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:adp.com OR from:icims.com OR from:smartrecruiters.com OR from:jobvite.com OR from:taleo.net OR from:indeedapply.com OR from:linkedin.com OR subject:("thank you for applying") OR subject:("application received") OR subject:("we received your application") OR subject:("interview") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("offer letter")) newer_than:4d`;
         const bgListParams = new URLSearchParams({ q: query, maxResults: 50 });
         const bgListResp = await fetch(
             `https://www.googleapis.com/gmail/v1/users/me/messages?${bgListParams}`,
@@ -2018,8 +2018,11 @@ function parseEmailDate(rawDate) {
 // ============================================================
 // SCAN QUERY PRESETS
 // ============================================================
-// Primary inbox filter — excludes Gmail's Promotions, Social, Updates, Forums tabs
-const PRIMARY_INBOX = "in:inbox -category:promotions -category:social -category:updates -category:forums";
+// Job email filter — excludes only clear noise (promotions, social, spam)
+// NOTE: intentionally does NOT exclude Updates or require in:inbox
+// because ATS systems (Workday, Greenhouse etc.) often land in Updates tab
+// and many job emails get archived — we want to find ALL of them
+const PRIMARY_INBOX = "-category:promotions -category:social -in:spam -in:trash";
 
 const SCAN_QUERY_PRESETS = {
     smart: `${PRIMARY_INBOX} ((from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:taleo.net OR from:adp.com OR from:icims.com OR from:smartrecruiters.com OR from:jobvite.com OR from:successfactors.com OR from:brassring.com OR from:candidatecare.com OR from:indeedapply.com OR from:linkedin.com OR from:indeed.com OR from:ziprecruiter.com) OR (subject:("thank you for applying") OR subject:("your application") OR subject:("application received") OR subject:("application for") OR subject:("we received your application") OR subject:("application update") OR subject:("interview") OR subject:("job offer") OR subject:("offer letter") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("position has been filled") OR subject:("other candidates")))`,
