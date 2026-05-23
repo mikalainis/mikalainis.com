@@ -227,7 +227,7 @@
                 </label>
                 <select id="global-ai-model-input"
                     class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-xs"
-                    onchange="setLocalStorageSafe('gemini_model', this.value)">
+                    onchange="setLocalStorageSafe('gemini_model', this.value); const mn=document.getElementById('autoscan-model-note'); if(mn) mn.textContent=this.value;">
                     <optgroup label="── Gemini 3 (Latest) ──">
                         <option value="gemini-3-flash-preview">gemini-3-flash-preview — fastest</option>
                         <option value="gemini-3-pro-preview">gemini-3-pro-preview — most capable</option>
@@ -602,9 +602,26 @@
                 </div>
                 <div class="flex items-center gap-3 flex-wrap">
                     <!-- Auto-scan countdown -->
-                    <div class="flex flex-col items-end">
-                        <span id="tracker-last-scan" class="text-xs text-gray-400 font-medium">Never scanned</span>
-                        <span id="autoscan-countdown" class="text-[10px] text-emerald-500 font-mono hidden"></span>
+                    <div class="flex flex-col items-end gap-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-gray-400 font-medium">Auto-scan:</span>
+                            <select id="autoscan-freq" onchange="updateAutoscanFrequency(this.value)"
+                                class="text-[10px] bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 text-gray-600 outline-none cursor-pointer font-medium">
+                                <option value="0.5">Every 30 min</option>
+                                <option value="1">Every hour</option>
+                                <option value="3" selected>Every 3 hrs</option>
+                                <option value="6">Every 6 hrs</option>
+                                <option value="12">Every 12 hrs</option>
+                                <option value="24">Once a day</option>
+                                <option value="0">Off</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span id="tracker-last-scan" class="text-[10px] text-gray-400">Never scanned</span>
+                            <span id="autoscan-countdown" class="text-[10px] text-emerald-500 font-mono hidden"></span>
+                            <span class="text-[10px] text-gray-300">·</span>
+                            <span class="text-[10px] text-gray-400">model: <span id="autoscan-model-note" class="font-mono text-indigo-400">gemini-2.5-flash</span></span>
+                        </div>
                     </div>
                     <button type="button" onclick="openScanModal()" id="scan-btn" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow transition-colors text-sm cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -1412,7 +1429,14 @@ function clearFolderFilter() {
 // Seed data pre-loaded from your real Drive + Gmail scan
 // ============================================================
 const APPLICATIONS_FOLDER_ID = '1T0rrDH7IQHmdln0DjKo4Q-yIgqXouyfg'; // Your "Applications" Drive folder
-const AUTOSCAN_INTERVAL_MS   = 3 * 60 * 60 * 1000; // 3 hours
+const AUTOSCAN_INTERVAL_MS   = 3 * 60 * 60 * 1000; // default 3 hours (overridden by user setting)
+const AUTOSCAN_FREQ_KEY      = 'tracker_scan_frequency'; // localStorage key for user's chosen frequency
+
+function getAutoscanInterval() {
+    const saved = getLocalStorageSafe(AUTOSCAN_FREQ_KEY);
+    const hours = parseFloat(saved) || 3;
+    return hours * 60 * 60 * 1000;
+}
 const AUTOSCAN_KEY            = 'tracker_last_autoscan';
 
 // Statuses: 'confirmed' | 'in_progress' | 'rejected'
@@ -1500,10 +1524,10 @@ function startAutoScanScheduler() {
     const lastScan = parseInt(getLocalStorageSafe(AUTOSCAN_KEY) || '0');
     const now      = Date.now();
     const elapsed  = now - lastScan;
-    const remaining = Math.max(0, AUTOSCAN_INTERVAL_MS - elapsed);
+    const remaining = Math.max(0, getAutoscanInterval() - elapsed);
 
     // If overdue by more than 30s and Google is connected, scan now
-    if (elapsed > AUTOSCAN_INTERVAL_MS + 30000 && googleAccessToken && isGapiReady) {
+    if (elapsed > getAutoscanInterval() + 30000 && googleAccessToken && isGapiReady) {
         setTimeout(() => runBackgroundScan(), 2000);
     }
 
@@ -1512,7 +1536,7 @@ function startAutoScanScheduler() {
         if (googleAccessToken && isGapiReady) {
             runBackgroundScan();
         }
-        autoScanTimer = setTimeout(scheduleNext, AUTOSCAN_INTERVAL_MS);
+        autoScanTimer = setTimeout(scheduleNext, getAutoscanInterval());
     }, remaining);
 
     // Countdown display
@@ -1526,7 +1550,7 @@ function updateCountdownDisplay() {
     const lastScan = parseInt(getLocalStorageSafe(AUTOSCAN_KEY) || '0');
     if (!lastScan) { el.classList.add('hidden'); return; }
 
-    const nextScan = lastScan + AUTOSCAN_INTERVAL_MS;
+    const nextScan = lastScan + getAutoscanInterval();
     const remaining = nextScan - Date.now();
     if (remaining <= 0) {
         el.textContent = 'Scan due now';
@@ -2375,6 +2399,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
     loadApplications();
+    // Restore saved autoscan frequency
+    const savedFreq = getLocalStorageSafe(AUTOSCAN_FREQ_KEY);
+    if (savedFreq) {
+        const sel = document.getElementById('autoscan-freq');
+        if (sel) sel.value = savedFreq;
+    }
+
+    // Show which model is being used for auto-scan
+    const modelSel = document.getElementById('global-ai-model-input');
+    if (modelSel) {
+        const modelNote = document.getElementById('autoscan-model-note');
+        if (modelNote) modelNote.textContent = modelSel.value || 'gemini-2.5-flash';
+    }
+
     // Start polling for Google API libraries to become ready
     initGoogleLibraries();
 });
