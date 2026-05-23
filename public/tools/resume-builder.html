@@ -725,22 +725,22 @@
      SCAN MODAL
 ═══════════════════════════════════════════ -->
 <div id="scan-modal" class="tracker-modal no-print">
-    <div class="tracker-modal-box">
-        <div class="px-6 py-5 border-b flex justify-between items-center bg-gray-50">
+    <div class="tracker-modal-box" style="max-width:480px;width:100%;">
+        <div class="px-5 py-4 border-b flex justify-between items-center bg-gray-50">
             <div>
                 <h3 class="text-lg font-bold text-gray-800">Scan Gmail for Applications</h3>
                 <p class="text-xs text-gray-500 mt-0.5">AI will classify confirmation, interview, offer &amp; rejection emails.</p>
             </div>
             <button type="button" onclick="closeScanModal()" class="text-gray-400 hover:text-gray-600 cursor-pointer text-xl font-bold leading-none">×</button>
         </div>
-        <div class="p-6 flex flex-col gap-4">
+        <div class="px-5 py-4 flex flex-col gap-3 overflow-y-auto" style="max-height:60vh;">
             <!-- Smart query presets -->
             <div>
                 <label class="text-xs font-semibold text-gray-600 block mb-2">Search preset</label>
                 <div class="grid grid-cols-2 gap-2 mb-3" id="preset-buttons">
                     <button type="button" onclick="setQueryPreset('smart')"
                         data-preset="smart"
-                        class="preset-btn active text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-emerald-600 text-white border-emerald-600">
+                        class="preset-btn active text-[11px] px-2.5 py-1.5 rounded-lg border font-semibold cursor-pointer transition-colors bg-emerald-600 text-white border-emerald-600">
                         ⚡ Smart (recommended)
                     </button>
                     <button type="button" onclick="setQueryPreset('confirmations')"
@@ -766,9 +766,9 @@
                 </div>
 
                 <!-- Query preview / custom input -->
-                <div id="query-preview" class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 mb-3">
-                    <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Gmail query</p>
-                    <p id="query-preview-text" class="text-xs font-mono text-slate-700 break-all leading-relaxed"></p>
+                <div id="query-preview" class="bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2" style="max-height:64px;overflow-y:auto;">
+                    <p class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Gmail query</p>
+                    <p id="query-preview-text" class="text-[10px] font-mono text-slate-600 break-all leading-snug"></p>
                 </div>
                 <div id="custom-query-row" class="hidden mb-3">
                     <input type="text" id="scan-query"
@@ -801,7 +801,7 @@
                     </select>
                 </div>
             </div>
-            <div class="bg-gray-900 rounded-xl p-4 min-h-[140px] overflow-y-auto">
+            <div class="bg-gray-900 rounded-xl p-3 overflow-y-auto" style="min-height:80px;max-height:120px;">
                 <div id="scan-log" class="text-green-400">
                     <span class="text-gray-500">Waiting to start scan...</span>
                 </div>
@@ -816,7 +816,7 @@
                 </div>
             </div>
         </div>
-        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+        <div class="px-5 py-3 border-t bg-gray-50 flex justify-end gap-3">
             <button type="button" onclick="closeScanModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium text-sm cursor-pointer">Close</button>
             <button type="button" id="start-scan-btn" onclick="startEmailScan()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-sm shadow cursor-pointer flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -1570,7 +1570,7 @@ async function runBackgroundScan() {
                     if (!r.ok) return null;
                     const h = msg.payload?.headers||[];
                     const get = n => (h.find(x=>x.name===n)||{}).value||'';
-                    return { id:m.id, subject:get('Subject'), from:get('From'), date:get('Date'), snippet:msg.snippet||'' };
+                    return { id:m.id, subject:get('Subject'), from:get('From'), date:parseEmailDate(get('Date')), snippet:msg.snippet||'' };
                 } catch(e) { return null; }
             })()
         ));
@@ -1611,7 +1611,7 @@ ${emailData}`;
                 company: r.company||'Unknown', role: r.role||'Unknown Role',
                 status: ['confirmed','in_progress','rejected'].includes(r.status) ? r.status : 'in_progress',
                 nextStep: r.nextStep||'', rejectionReason: r.rejectionReason||'',
-                date: r.date||em.date?.slice(0,10)||new Date().toISOString().slice(0,10),
+                date: em.date || new Date().toISOString().slice(0,10),
                 source:'gmail', rawSnippets:[em.snippet],
                 notes:`From: ${em.from}
 Subject: ${em.subject}`
@@ -1726,7 +1726,7 @@ async function startEmailScan() {
                         if (!r.ok) return null;
                         const headers = msg.payload?.headers || [];
                         const get = name => (headers.find(h => h.name === name) || {}).value || '';
-                        return { id:m.id, subject:get('Subject'), from:get('From'), date:get('Date'), snippet:msg.snippet||'' };
+                        return { id:m.id, subject:get('Subject'), from:get('From'), date:parseEmailDate(get('Date')), snippet:msg.snippet||'' };
                     } catch(e) { return null; }
                 })()
             ));
@@ -1751,7 +1751,8 @@ async function startEmailScan() {
             ).join('\n');
 
             const prompt = `Classify these emails as job application related. For each relevant one extract:
-- index, company, role, status (must be exactly one of: "confirmed", "in_progress", "rejected"), nextStep, rejectionReason, date (ISO YYYY-MM-DD)
+- index, company, role, status (must be exactly one of: "confirmed", "in_progress", "rejected"), nextStep, rejectionReason
+- Do NOT include a date field — dates are taken directly from email headers
 - "confirmed" = employer acknowledged/received application via email
 - "in_progress" = applied but awaiting response, or action needed
 - "rejected" = explicitly not moving forward
@@ -1782,7 +1783,7 @@ ${emailData}`;
                         status,
                         nextStep: r.nextStep || '',
                         rejectionReason: r.rejectionReason || '',
-                        date: r.date || email.date?.slice(0,10) || new Date().toISOString().slice(0,10),
+                        date: email.date || new Date().toISOString().slice(0,10),
                         source: 'gmail',
                         rawSnippets: [email.snippet],
                         notes: `From: ${email.from}\nSubject: ${email.subject}`
@@ -1931,6 +1932,46 @@ function copyCoverLetter() {
         });
 }
 
+
+
+// ============================================================
+// DATE PARSING UTILITY
+// ============================================================
+function parseEmailDate(rawDate) {
+    // Handles all Gmail Date header formats:
+    // RFC 2822: "Wed, 20 May 2026 15:16:35 +0000"
+    // RFC 2822 no weekday: "20 May 2026 15:16:35 +0000"
+    // ISO: "2026-05-20T15:16:35Z"
+    // Already ISO date: "2026-05-20"
+    if (!rawDate) return new Date().toISOString().slice(0,10);
+
+    // Already ISO date (YYYY-MM-DD)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate.trim())) return rawDate.trim();
+
+    // Try native Date parse (handles RFC 2822 and ISO)
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+        return d.toISOString().slice(0,10);
+    }
+
+    // Handle ISO datetime strings like "2026-05-20T15:16:35Z"
+    const isoMatch = rawDate.match(/^(\d{4}-\d{2}-\d{2})T/);
+    if (isoMatch) return isoMatch[1];
+
+    // Manual RFC 2822 parse as fallback
+    // e.g. "Wed, 20 May 2026 15:16:35 +0000" or "20 May 2026 15:16:35 +0000"
+    const months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+    const m = rawDate.match(/(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/);
+    if (m) {
+        const day   = m[1].padStart(2,'0');
+        const month = String((months[m[2].toLowerCase()] || 0) + 1).padStart(2,'0');
+        const year  = m[3];
+        return `${year}-${month}-${day}`;
+    }
+
+    // Last resort — today
+    return new Date().toISOString().slice(0,10);
+}
 
 // ============================================================
 // SCAN QUERY PRESETS
