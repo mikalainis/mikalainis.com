@@ -1574,7 +1574,7 @@ async function runBackgroundScan() {
 
     // Reuse the startEmailScan logic but silently
     try {
-        const query   = 'subject:(application OR applied OR interview OR offer OR rejected OR "thank you for applying" OR "we received your application") newer_than:4d';
+        const query   = `${PRIMARY_INBOX} (subject:("thank you for applying") OR subject:("application received") OR subject:("interview") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("offer") OR from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:adp.com OR from:icims.com OR from:smartrecruiters.com) newer_than:4d`;
         const bgListParams = new URLSearchParams({ q: query, maxResults: 50 });
         const bgListResp = await fetch(
             `https://www.googleapis.com/gmail/v1/users/me/messages?${bgListParams}`,
@@ -1588,13 +1588,14 @@ async function runBackgroundScan() {
         const snippets = await Promise.all(messages.map(m =>
             (async () => {
                 try {
-                    const p = new URLSearchParams({ format:'metadata', metadataHeaders:'Subject,From,Date' });
+                    const p = new URLSearchParams({ format:'minimal' });
                     const r = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}?${p}`, { headers:{ Authorization:`Bearer ${googleAccessToken}` } });
                     const msg = await r.json();
                     if (!r.ok) return null;
                     const h = msg.payload?.headers||[];
                     const get = n => (h.find(x=>x.name===n)||{}).value||'';
-                    return { id:m.id, subject:get('Subject'), from:get('From'), date:parseEmailDate(get('Date')), snippet:msg.snippet||'' };
+                    const receivedDate = msg.internalDate ? new Date(parseInt(msg.internalDate)).toISOString().slice(0,10) : parseEmailDate(get('Date'));
+                    return { id:m.id, subject:get('Subject'), from:get('From'), date:receivedDate, link:`https://mail.google.com/mail/u/0/#inbox/${msg.id}`, snippet:msg.snippet||'' };
                 } catch(e) { return null; }
             })()
         ));
@@ -1753,13 +1754,14 @@ async function startEmailScan() {
             const fetched = await Promise.all(batch.map(m =>
                 (async () => {
                     try {
-                        const p = new URLSearchParams({ format:'metadata', metadataHeaders:'Subject,From,Date' });
+                        const p = new URLSearchParams({ format:'minimal' });
                         const r = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}?${p}`, { headers:{ Authorization:`Bearer ${googleAccessToken}` } });
                         const msg = await r.json();
                         if (!r.ok) return null;
                         const headers = msg.payload?.headers || [];
                         const get = name => (headers.find(h => h.name === name) || {}).value || '';
-                        return { id:m.id, subject:get('Subject'), from:get('From'), date:parseEmailDate(get('Date')), snippet:msg.snippet||'' };
+                        const receivedDate = msg.internalDate ? new Date(parseInt(msg.internalDate)).toISOString().slice(0,10) : parseEmailDate(get('Date'));
+                        return { id:m.id, subject:get('Subject'), from:get('From'), date:receivedDate, link:`https://mail.google.com/mail/u/0/#inbox/${msg.id}`, snippet:msg.snippet||'' };
                     } catch(e) { return null; }
                 })()
             ));
@@ -1817,6 +1819,7 @@ ${emailData}`;
                         nextStep: r.nextStep || '',
                         rejectionReason: r.rejectionReason || '',
                         date: email.date || new Date().toISOString().slice(0,10),
+                        link: email.link || '',
                         source: 'gmail',
                         rawSnippets: [email.snippet],
                         notes: `From: ${email.from}\nSubject: ${email.subject}`
@@ -2015,14 +2018,17 @@ function parseEmailDate(rawDate) {
 // ============================================================
 // SCAN QUERY PRESETS
 // ============================================================
+// Primary inbox filter — excludes Gmail's Promotions, Social, Updates, Forums tabs
+const PRIMARY_INBOX = "in:inbox -category:promotions -category:social -category:updates -category:forums";
+
 const SCAN_QUERY_PRESETS = {
-    smart: `(from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:taleo.net OR from:adp.com OR from:icims.com OR from:smartrecruiters.com OR from:jobvite.com OR from:successfactors.com OR from:brassring.com OR from:candidatecare.com OR from:indeedapply.com OR from:linkedin.com OR from:indeed.com OR from:ziprecruiter.com) OR (subject:("thank you for applying") OR subject:("your application") OR subject:("application received") OR subject:("application for") OR subject:("we received your application") OR subject:("application update") OR subject:("interview") OR subject:("job offer") OR subject:("offer letter") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("position has been filled") OR subject:("other candidates"))`,
+    smart: `${PRIMARY_INBOX} ((from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:taleo.net OR from:adp.com OR from:icims.com OR from:smartrecruiters.com OR from:jobvite.com OR from:successfactors.com OR from:brassring.com OR from:candidatecare.com OR from:indeedapply.com OR from:linkedin.com OR from:indeed.com OR from:ziprecruiter.com) OR (subject:("thank you for applying") OR subject:("your application") OR subject:("application received") OR subject:("application for") OR subject:("we received your application") OR subject:("application update") OR subject:("interview") OR subject:("job offer") OR subject:("offer letter") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("position has been filled") OR subject:("other candidates")))`,
 
-    confirmations: `subject:("thank you for applying") OR subject:("application received") OR subject:("we received your application") OR subject:("your application for") OR subject:("successfully received") OR subject:("application submitted")`,
+    confirmations: `${PRIMARY_INBOX} (subject:("thank you for applying") OR subject:("application received") OR subject:("we received your application") OR subject:("your application for") OR subject:("successfully received") OR subject:("application submitted"))`,
 
-    rejections: `subject:("unfortunately") OR subject:("not moving forward") OR subject:("other candidates") OR subject:("position has been filled") OR subject:("not selected") OR subject:("decided to move forward with other") OR subject:("not a match") OR subject:("application update")`,
+    rejections: `${PRIMARY_INBOX} (subject:("unfortunately") OR subject:("not moving forward") OR subject:("other candidates") OR subject:("position has been filled") OR subject:("not selected") OR subject:("decided to move forward with other") OR subject:("not a match") OR subject:("application update"))`,
 
-    interviews: `subject:("interview") OR subject:("next steps") OR subject:("phone screen") OR subject:("technical screen") OR subject:("assessment") OR subject:("hiring manager") OR subject:("schedule a") OR subject:("onsite") OR subject:("virtual interview") OR subject:("coding challenge")`,
+    interviews: `${PRIMARY_INBOX} (subject:("interview") OR subject:("next steps") OR subject:("phone screen") OR subject:("technical screen") OR subject:("assessment") OR subject:("hiring manager") OR subject:("schedule a") OR subject:("onsite") OR subject:("virtual interview") OR subject:("coding challenge"))`,
 
     custom: ''
 };
@@ -2169,7 +2175,12 @@ function renderTable() {
                 <div class="font-semibold text-gray-900 truncate">${escHtml(a.company)}</div>
                 <div class="text-xs text-gray-500 truncate">${escHtml(a.role)}</div>
             </div>
-            <div class="text-gray-500 text-xs font-mono">${a.date || '—'}</div>
+            <div class="text-gray-500 text-xs font-mono flex items-center gap-1">
+                ${a.date || '—'}
+                ${a.link ? `<a href="${a.link}" target="_blank" title="Open email" class="text-blue-400 hover:text-blue-600 transition-colors" onclick="event.stopPropagation()">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </a>` : ''}
+            </div>
             <div>${statusBadge(a.status)}</div>
             <div class="text-xs text-gray-600 truncate">${escHtml(a.nextStep || '—')}</div>
             <button type="button" onclick="event.stopPropagation(); deleteApp('${a.id}')" class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="Delete">
@@ -2191,6 +2202,11 @@ function selectApp(id) {
             <div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Role</div><div class="text-gray-700 mt-0.5">${escHtml(app.role)}</div></div>
             <div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Applied</div><div class="text-gray-700 font-mono text-xs mt-0.5">${app.date||'—'}</div></div>
             <div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Source</div><div class="text-gray-500 text-xs mt-0.5 capitalize">${app.source||'manual'}</div></div>
+            ${app.link ? `<div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Email</div>
+                <a href="${app.link}" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs mt-0.5 flex items-center gap-1 font-medium">
+                    <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Open in Gmail
+                </a></div>` : ''}
             ${app.nextStep ? `<div><div class="text-xs font-bold text-amber-600 uppercase tracking-wider">Next Step</div><div class="text-gray-700 mt-0.5 text-sm">${escHtml(app.nextStep)}</div></div>` : ''}
             ${app.rejectionReason ? `<div><div class="text-xs font-bold text-red-500 uppercase tracking-wider">Rejection Reason</div><div class="text-gray-700 mt-0.5 text-sm">${escHtml(app.rejectionReason)}</div></div>` : ''}
             ${app.notes ? `<div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Notes</div><div class="text-gray-500 text-xs mt-0.5 whitespace-pre-line">${escHtml(app.notes)}</div></div>` : ''}
