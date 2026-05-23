@@ -210,7 +210,7 @@
             </span>
             <div>
                 <label class="block text-xs text-slate-400 mb-1">Gemini API Key</label>
-                <input type="password" id="global-api-key-input" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-500" placeholder="Paste API Key..." onchange="setLocalStorageSafe('gemini_api_key', this.value)">
+                <input type="password" id="global-api-key-input" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-500" placeholder="Paste API Key..." onchange="setLocalStorageSafe('gemini_api_key', this.value); fetchGeminiModels();">
                 <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
                     Powers AI features: resume tailoring, job match scoring, Gmail application scanner, and cover letter generation.
                     Your key is stored only in your browser — never sent to any server.
@@ -218,8 +218,29 @@
                 </p>
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1">Model</label>
-                <input type="text" id="global-ai-model-input" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-500" placeholder="gemini-2.5-flash" onchange="setLocalStorageSafe('gemini_model', this.value)">
+                <label class="block text-xs text-slate-400 mb-1 flex items-center justify-between">
+                    <span>Model</span>
+                    <button type="button" onclick="fetchGeminiModels()" id="refresh-models-btn"
+                        class="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer bg-transparent border-0">
+                        ↻ Refresh
+                    </button>
+                </label>
+                <select id="global-ai-model-input"
+                    class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-xs"
+                    onchange="setLocalStorageSafe('gemini_model', this.value)">
+                    <optgroup label="── Gemini 3 (Latest) ──">
+                        <option value="gemini-3-flash-preview">gemini-3-flash-preview — fastest</option>
+                        <option value="gemini-3-pro-preview">gemini-3-pro-preview — most capable</option>
+                    </optgroup>
+                    <optgroup label="── Gemini 2.5 (Stable) ──">
+                        <option value="gemini-2.5-flash" selected>gemini-2.5-flash ★ recommended</option>
+                        <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite — budget</option>
+                        <option value="gemini-2.5-pro">gemini-2.5-pro — complex tasks</option>
+                    </optgroup>
+                </select>
+                <p class="text-[10px] text-slate-500 mt-1">
+                    ↻ Refresh loads available models from your API key.
+                </p>
             </div>
         </div>
 
@@ -2052,12 +2073,122 @@ function toggleView(view) {
 let undoStack = [];
 let draggedSkill = null;
 
+
+// ============================================================
+// FETCH LIVE GEMINI MODELS
+// ============================================================
+async function fetchGeminiModels(silent = false) {
+    const apiKey = document.getElementById('global-api-key-input')?.value?.trim();
+    if (!apiKey) { showToast('Enter your Gemini API Key first.', true); return; }
+
+    const btn = document.getElementById('refresh-models-btn');
+    if (btn && !silent) btn.textContent = '↻ Loading...';
+
+    try {
+        const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models?pageSize=50&key=${apiKey}`
+        );
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || `HTTP ${resp.status}`);
+
+        // Filter to text-generation capable models only, exclude audio/video/embedding/tts
+        const exclude = ['embedding', 'tts', 'speech', 'audio', 'video', 'image', 'vision', 'aqa', 'retrieval'];
+        const models = (data.models || [])
+            .filter(m => {
+                const name = m.name.toLowerCase();
+                const desc = (m.description || '').toLowerCase();
+                // Must support generateContent
+                const supportsGenerate = (m.supportedGenerationMethods || []).includes('generateContent');
+                // Exclude non-text models
+                const isExcluded = exclude.some(e => name.includes(e) || desc.includes(e));
+                return supportsGenerate && !isExcluded;
+            })
+            .map(m => ({
+                id: m.name.replace('models/', ''),
+                display: m.displayName || m.name.replace('models/', ''),
+                description: m.description || ''
+            }))
+            .sort((a, b) => {
+                // Sort: gemini-3 first, then 2.5, then others
+                const rank = id => id.startsWith('gemini-3') ? 0 : id.startsWith('gemini-2.5') ? 1 : 2;
+                return rank(a.id) - rank(b.id) || a.id.localeCompare(b.id);
+            });
+
+        if (!models.length) {
+            showToast('No text models found for this API key.', true);
+            return;
+        }
+
+        const sel = document.getElementById('global-ai-model-input');
+        if (!sel) return;
+
+        const currentVal = sel.value;
+
+        // Rebuild options grouped by series
+        sel.innerHTML = '';
+        const groups = {
+            'Gemini 3': models.filter(m => m.id.startsWith('gemini-3')),
+            'Gemini 2.5': models.filter(m => m.id.startsWith('gemini-2.5')),
+            'Other': models.filter(m => !m.id.startsWith('gemini-3') && !m.id.startsWith('gemini-2.5')),
+        };
+
+        for (const [groupName, groupModels] of Object.entries(groups)) {
+            if (!groupModels.length) continue;
+            const og = document.createElement('optgroup');
+            og.label = `── ${groupName} ──`;
+            groupModels.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                // Add helpful suffix hints
+                const hint = m.id.includes('flash-lite') ? ' — budget' :
+                             m.id.includes('flash') ? ' — fast' :
+                             m.id.includes('pro') ? ' — powerful' : '';
+                opt.textContent = m.id + hint;
+                og.appendChild(opt);
+            });
+            sel.appendChild(og);
+        }
+
+        // Restore selection or default to gemini-2.5-flash
+        const preferred = currentVal || 'gemini-2.5-flash';
+        const exists = Array.from(sel.options).some(o => o.value === preferred);
+        sel.value = exists ? preferred : sel.options[0]?.value;
+        setLocalStorageSafe('gemini_model', sel.value);
+
+        if (!silent) showToast(`Loaded ${models.length} models`);
+    } catch(e) {
+        showToast('Failed to load models: ' + e.message, true);
+        console.error('[Models]', e);
+    } finally {
+        if (btn) btn.textContent = '↻ Refresh';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Restore Gemini settings
     const savedKey = getLocalStorageSafe('gemini_api_key');
     if (savedKey) document.getElementById('global-api-key-input').value = savedKey;
     const savedModel = getLocalStorageSafe('gemini_model');
-    if (savedModel) document.getElementById('global-ai-model-input').value = savedModel;
+    if (savedModel) {
+        const sel = document.getElementById('global-ai-model-input');
+        if (sel) {
+            // Try to select saved model; if not in list add it
+            const exists = Array.from(sel.options).some(o => o.value === savedModel);
+            if (!exists) {
+                const opt = document.createElement('option');
+                opt.value = savedModel;
+                opt.textContent = savedModel + ' (saved)';
+                sel.appendChild(opt);
+            }
+            sel.value = savedModel;
+        }
+    }
+
+    // Auto-fetch latest models on every page load if API key is available
+    if (savedKey) {
+        // Small delay so the dropdown renders first
+        setTimeout(() => fetchGeminiModels(true), 500);
+    }
 
     // Pre-populate Google profile display if a session was saved
     const savedProfile = getLocalStorageSafe('google_user_profile');
