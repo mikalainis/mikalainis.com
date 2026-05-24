@@ -50,9 +50,7 @@ export default function Navigation() {
             </a>
           ))}
           <a
-            href="/tools/resume-builder.html"
-            target="_blank"
-            rel="noreferrer"
+            href="/tools/resume-builder"
             className="bg-sky-400 text-slate-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-sky-300 transition-all hover:shadow-lg hover:shadow-sky-400/20"
           >
             Resume Builder
@@ -96,7 +94,7 @@ export default function Navigation() {
               </a>
             ))}
             <a
-              href="/tools/resume-builder.html"
+              href="/tools/resume-builder"
               target="_blank"
               rel="noreferrer"
               className="mt-3 bg-sky-400 text-slate-900 px-4 py-3 rounded-lg text-sm font-bold text-center hover:bg-sky-300 transition-colors"
