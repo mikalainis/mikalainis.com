@@ -1,0 +1,4 @@
+{
+  "name": "Mikalainis.com",
+  "postCreateCommand": "npm install && npm install -g @anthropic-ai/claude-code"
+}
