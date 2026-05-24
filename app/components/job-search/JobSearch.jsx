@@ -137,7 +137,7 @@ export default function JobSearch() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [filters.proximity]);
 
   // Update a job's savedStatus (tracker integration)
   const handleSave = useCallback((jobId, status) => {

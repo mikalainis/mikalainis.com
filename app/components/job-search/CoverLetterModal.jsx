@@ -159,7 +159,7 @@ export default function CoverLetterModal({ job, onClose }) {
                   Crafting your cover letter...
                 </p>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                  Tailoring to {job.company}'s specific role
+                  Tailoring to {job.company}&apos;s specific role
                 </p>
               </div>
             </div>
