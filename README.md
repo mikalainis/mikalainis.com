@@ -1,40 +1,75 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# mikalainis.com
+
+Personal portfolio and career tools site for Paulius Mikalainis — Principal Data Scientist at Verizon.
+
+Built with **Next.js 13 (App Router)**, **TypeScript**, and **Tailwind CSS**.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun run dev
+npm install
+npm run dev      # http://localhost:3000
+npm run build
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Pages
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Route | Description |
+|---|---|
+| `/` | Portfolio — About, Skills, Experience, Projects, Certifications, Contact |
+| `/tools/resume-builder` | Career tools — AI Job Search, Resume Builder link |
+| `/tools/resume-builder.html` | Standalone AI Resume Builder (static HTML, Gemini-powered) |
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Career Tools (`/tools/resume-builder`)
 
-## Learn More
+### AI Job Search
+- Natural-language job search powered by **Gemini API** with Google Search grounding
+- Filters: work model, role type, match score, proximity from Basking Ridge NJ
+- Cards show match score, matched skills, salary, distance, and job source
+- Profile and preferences hardcoded in `lib/systemPrompt.js`
 
-To learn more about Next.js, take a look at the following resources:
+### Resume Builder
+- Standalone HTML tool at `public/tools/resume-builder.html`
+- Features: AI resume generation, PDF export, job match scoring, Gmail-based application tracker
+- No build step — edit the file directly
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Shared API Key
+Both tools read `gemini_api_key` and `gemini_model` from `localStorage`. Set once in the **AI Settings** panel on the tools page.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+app/
+  page.tsx                        # Portfolio landing page
+  layout.tsx                      # Metadata, fonts
+  components/
+    job-search/                   # Job search UI components
+      JobSearch.jsx               # Main orchestrator (search, filter, sort)
+      SearchBar.jsx               # Query input + quick-search chips
+      JobCard.jsx                 # Individual result card
+      FilterBar.jsx               # Work model, role type, score, proximity filters
+      ApiKeySettings.jsx          # Gemini API key/model panel (localStorage)
+      ResumeTailorPanel.jsx       # Inline tailoring suggestions display
+    ResumeTailorSection.jsx       # Resume tailor section for tools page
+    Navigation.tsx                # Fixed top nav
+    Hero.tsx / Skills.tsx / ...   # Portfolio sections
+  api/
+    job-search/route.js           # Gemini job search (Google Search grounding)
+    cover-letter/route.js         # Gemini cover letter generation
+    tailor-resume/route.js        # Gemini resume tailoring suggestions
+  tools/resume-builder/page.tsx   # Career tools page
+lib/
+  claudeApi.js                    # Client-side fetch helpers (reads key from localStorage)
+  systemPrompt.js                 # Candidate profile + all AI system prompts
+public/
+  tools/resume-builder.html       # Standalone resume builder
+  photo.jpg                       # Profile photo
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Environment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
-
-git add public/tools/resume-builder.html
-git commit -m "config: set Google Client ID"
-git push origin main
+```bash
+# .env.local — only needed for server-side API calls if overriding the client-supplied key
+ANTHROPIC_API_KEY=...   # Legacy — routes now use Gemini via client-supplied key
+```
