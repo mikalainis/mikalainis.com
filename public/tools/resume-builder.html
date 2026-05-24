@@ -601,28 +601,7 @@
                     <p class="text-sm text-gray-500 mt-1">Connected to Gmail &amp; Google Drive · AI-powered status classification</p>
                 </div>
                 <div class="flex items-center gap-3 flex-wrap">
-                    <!-- Auto-scan countdown -->
-                    <div class="flex flex-col items-end gap-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-gray-400 font-medium">Auto-scan:</span>
-                            <select id="autoscan-freq" onchange="updateAutoscanFrequency(this.value)"
-                                class="text-[10px] bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 text-gray-600 outline-none cursor-pointer font-medium">
-                                <option value="0.5">Every 30 min</option>
-                                <option value="1">Every hour</option>
-                                <option value="3" selected>Every 3 hrs</option>
-                                <option value="6">Every 6 hrs</option>
-                                <option value="12">Every 12 hrs</option>
-                                <option value="24">Once a day</option>
-                                <option value="0">Off</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <span id="tracker-last-scan" class="text-[10px] text-gray-400">Never scanned</span>
-                            <span id="autoscan-countdown" class="text-[10px] text-emerald-500 font-mono hidden"></span>
-                            <span class="text-[10px] text-gray-300">·</span>
-                            <span class="text-[10px] text-gray-400">model: <span id="autoscan-model-note" class="font-mono text-indigo-400">gemini-2.5-flash</span></span>
-                        </div>
-                    </div>
+                    <span id="tracker-last-scan" class="text-[10px] text-gray-400">Never scanned</span>
                     <button type="button" onclick="openScanModal()" id="scan-btn" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow transition-colors text-sm cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         Scan Email
@@ -1429,16 +1408,6 @@ function clearFolderFilter() {
 // Seed data pre-loaded from your real Drive + Gmail scan
 // ============================================================
 const APPLICATIONS_FOLDER_ID = '1T0rrDH7IQHmdln0DjKo4Q-yIgqXouyfg'; // Your "Applications" Drive folder
-const AUTOSCAN_INTERVAL_MS   = 3 * 60 * 60 * 1000; // default 3 hours (overridden by user setting)
-const AUTOSCAN_FREQ_KEY      = 'tracker_scan_frequency'; // localStorage key for user's chosen frequency
-
-function getAutoscanInterval() {
-    const saved = getLocalStorageSafe(AUTOSCAN_FREQ_KEY);
-    const hours = parseFloat(saved) || 3;
-    return hours * 60 * 60 * 1000;
-}
-const AUTOSCAN_KEY            = 'tracker_last_autoscan';
-
 // Statuses: 'confirmed' | 'in_progress' | 'rejected'
 const SEED_APPLICATIONS = [
   { id:'seed_01', company:'Barclays',           role:'VP, Senior Data Engineer',                        status:'confirmed',   date:'2026-05-20', source:'gmail', nextStep:'Complete online assessment (Workday)', rejectionReason:'', notes:'Invited to next stage of assessment process. Ref: JR-0000061571' },
@@ -1466,9 +1435,6 @@ const SEED_APPLICATIONS = [
 let applications = [];
 let activeFilter = 'all';
 let selectedAppId = null;
-let autoScanTimer = null;
-let countdownTimer = null;
-
 function loadApplications() {
     try {
         const saved = getLocalStorageSafe('job_applications');
@@ -1513,147 +1479,6 @@ function addApplication(app) {
         ...app
     });
     return true; // was new
-}
-
-// ── Auto-scan scheduler ───────────────────────────────────────
-function startAutoScanScheduler() {
-    // Clear any existing timers
-    if (autoScanTimer)  clearInterval(autoScanTimer);
-    if (countdownTimer) clearInterval(countdownTimer);
-
-    const lastScan = parseInt(getLocalStorageSafe(AUTOSCAN_KEY) || '0');
-    const now      = Date.now();
-    const elapsed  = now - lastScan;
-    const remaining = Math.max(0, getAutoscanInterval() - elapsed);
-
-    // If overdue by more than 30s and Google is connected, scan now
-    if (elapsed > getAutoscanInterval() + 30000 && googleAccessToken && isGapiReady) {
-        setTimeout(() => runBackgroundScan(), 2000);
-    }
-
-    // Schedule next scan
-    autoScanTimer = setTimeout(function scheduleNext() {
-        if (googleAccessToken && isGapiReady) {
-            runBackgroundScan();
-        }
-        autoScanTimer = setTimeout(scheduleNext, getAutoscanInterval());
-    }, remaining);
-
-    // Countdown display
-    updateCountdownDisplay();
-    countdownTimer = setInterval(updateCountdownDisplay, 60000); // update every minute
-}
-
-function updateCountdownDisplay() {
-    const el = document.getElementById('autoscan-countdown');
-    if (!el) return;
-    const lastScan = parseInt(getLocalStorageSafe(AUTOSCAN_KEY) || '0');
-    if (!lastScan) { el.classList.add('hidden'); return; }
-
-    const nextScan = lastScan + getAutoscanInterval();
-    const remaining = nextScan - Date.now();
-    if (remaining <= 0) {
-        el.textContent = 'Scan due now';
-        el.classList.remove('hidden');
-        return;
-    }
-    const hrs  = Math.floor(remaining / 3600000);
-    const mins = Math.floor((remaining % 3600000) / 60000);
-    el.textContent = `Next scan in ${hrs}h ${mins}m`;
-    el.classList.remove('hidden');
-}
-
-async function runBackgroundScan() {
-    if (!googleAccessToken || !isGapiReady) return;
-    const apiKey = document.getElementById('global-api-key-input')?.value?.trim();
-    if (!apiKey) return;
-
-    console.log('[AutoScan] Starting background Gmail scan...');
-    setLocalStorageSafe(AUTOSCAN_KEY, String(Date.now()));
-    updateCountdownDisplay();
-
-    // Reuse the startEmailScan logic but silently
-    try {
-                const query = `${PRIMARY_INBOX} (from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:adp.com OR from:icims.com OR from:smartrecruiters.com OR from:jobvite.com OR from:taleo.net OR from:indeedapply.com OR from:linkedin.com OR subject:("thank you for applying") OR subject:("application received") OR subject:("we received your application") OR subject:("interview") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("offer letter")) newer_than:4d`;
-        const bgListParams = new URLSearchParams({ q: query, maxResults: 50 });
-        const bgListResp = await fetch(
-            `https://www.googleapis.com/gmail/v1/users/me/messages?${bgListParams}`,
-            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
-        );
-        const bgListData = await bgListResp.json();
-        if (!bgListResp.ok) throw new Error(bgListData.error?.message || `HTTP ${bgListResp.status}`);
-        const messages = bgListData.messages || [];
-        if (!messages.length) return;
-
-        const snippets = await Promise.all(messages.map(m =>
-            (async () => {
-                try {
-                    const p = new URLSearchParams({ format:'minimal' });
-                    const r = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}?${p}`, { headers:{ Authorization:`Bearer ${googleAccessToken}` } });
-                    const msg = await r.json();
-                    if (!r.ok) return null;
-                    const h = msg.payload?.headers||[];
-                    const get = n => (h.find(x=>x.name===n)||{}).value||'';
-                    const receivedDate = msg.internalDate ? new Date(parseInt(msg.internalDate)).toISOString().slice(0,10) : parseEmailDate(get('Date'));
-                    return { id:m.id, subject:get('Subject'), from:get('From'), date:receivedDate, link:`https://mail.google.com/mail/u/0/#inbox/${msg.id}`, snippet:msg.snippet||'' };
-                } catch(e) { return null; }
-            })()
-        ));
-
-        const valid = snippets.filter(Boolean);
-        if (!valid.length) return;
-
-        const model = document.getElementById('global-ai-model-input')?.value?.trim()||'gemini-2.5-flash';
-        const emailData = valid.map((e,i) =>
-            `[${i}] Subject:"${e.subject}" | From:${e.from} | Date:${e.date} | Snippet:${e.snippet}`
-        ).join('\n');
-
-        const prompt = `Classify these emails as job application related. For each relevant one extract:
-- company, role, status (must be exactly one of: "confirmed", "in_progress", "rejected"), nextStep, rejectionReason, date (ISO)
-- "confirmed" = application received/acknowledged by employer
-- "in_progress" = awaiting response, incomplete, needs action
-- "rejected" = explicitly not moving forward
-
-Only job-application emails. Return JSON array only, no other text.
-
-EMAILS:
-${emailData}`;
-
-        const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-            { method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({contents:[{parts:[{text:prompt}]}]}) }
-        );
-        const data = await resp.json();
-        let text = data.candidates?.[0]?.content?.parts?.[0]?.text||'[]';
-        text = text.replace(/```json|```/g,'').trim();
-        const results = JSON.parse(text);
-        let newCount = 0;
-        results.forEach(r => {
-            const em = valid[r.index];
-            if (!em) return;
-            const isNew = addApplication({
-                company: r.company||'Unknown', role: r.role||'Unknown Role',
-                status: ['confirmed','in_progress','rejected'].includes(r.status) ? r.status : 'in_progress',
-                nextStep: r.nextStep||'', rejectionReason: r.rejectionReason||'',
-                date: em.date || new Date().toISOString().slice(0,10),
-                source:'gmail', rawSnippets:[em.snippet],
-                notes:`From: ${em.from}
-Subject: ${em.subject}`
-            });
-            if (isNew) newCount++;
-        });
-        if (newCount > 0) {
-            saveApplications();
-            renderDashboard();
-            showToast(`Auto-scan: ${newCount} new application${newCount>1?'s':''} found`);
-        }
-        const lastEl = document.getElementById('tracker-last-scan');
-        if (lastEl) lastEl.textContent = 'Last scan: ' + new Date().toLocaleString();
-        startAutoScanScheduler(); // reschedule
-    } catch(e) {
-        console.warn('[AutoScan] Error:', e.message);
-    }
 }
 
 // ============================================================
@@ -1843,11 +1668,8 @@ ${emailData}`;
         const inProgress = applications.filter(a => a.status === 'in_progress').length;
         const rejected   = applications.filter(a => a.status === 'rejected').length;
         scanLog(`\n📊 Results: ${applications.length} total — ${confirmed} confirmed · ${inProgress} in progress · ${rejected} rejected`, 'text-emerald-300');
-        setLocalStorageSafe(AUTOSCAN_KEY, String(Date.now()));
-        updateCountdownDisplay();
         scanLog(`\n🎉 Done! Found ${totalFound} job application emails.`, 'text-emerald-400');
         document.getElementById('tracker-last-scan').textContent = 'Last scan: ' + new Date().toLocaleString();
-        startAutoScanScheduler();
 
     } catch(e) {
         scanLog(`❌ Error: ${e.message}`, 'text-red-400');
@@ -2418,19 +2240,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
     loadApplications();
-    // Restore saved autoscan frequency
-    const savedFreq = getLocalStorageSafe(AUTOSCAN_FREQ_KEY);
-    if (savedFreq) {
-        const sel = document.getElementById('autoscan-freq');
-        if (sel) sel.value = savedFreq;
-    }
-
-    // Show which model is being used for auto-scan
-    const modelSel = document.getElementById('global-ai-model-input');
-    if (modelSel) {
-        const modelNote = document.getElementById('autoscan-model-note');
-        if (modelNote) modelNote.textContent = modelSel.value || 'gemini-2.5-flash';
-    }
 
     // Start polling for Google API libraries to become ready
     initGoogleLibraries();

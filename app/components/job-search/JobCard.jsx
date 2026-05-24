@@ -8,7 +8,6 @@
  */
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 // Work model badge colors
 const WORK_MODEL_STYLES = {
@@ -68,12 +67,6 @@ function formatDate(dateStr) {
 
 export default function JobCard({ job, onSave }) {
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
-  const router = useRouter();
-
-  const handleTailor = () => {
-    localStorage.setItem('tailor_job', JSON.stringify(job));
-    router.push('/tools/resume-builder');
-  };
 
   const salary = formatSalary(job.salaryMin, job.salaryMax);
   const postedLabel = formatDate(job.postedDate);
@@ -278,26 +271,6 @@ export default function JobCard({ job, onSave }) {
               </div>
             )}
           </div>
-
-          {/* Tailor Resume button */}
-          <button
-            onClick={handleTailor}
-            className="
-              flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-              border border-slate-200 dark:border-slate-700
-              text-slate-600 dark:text-slate-400
-              hover:border-purple-300 dark:hover:border-purple-600
-              hover:text-purple-600 dark:hover:text-purple-400
-              hover:bg-purple-50 dark:hover:bg-purple-900/20
-              transition-all duration-150
-            "
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-            Tailor Resume
-          </button>
 
           {/* Job source */}
           {job.jobSource && (

@@ -1,6 +1,5 @@
 import JobSearch from '@/app/components/job-search/JobSearch'
 import ApiKeySettings from '@/app/components/job-search/ApiKeySettings'
-import ResumeTailorSection from '@/app/components/ResumeTailorSection'
 
 export const metadata = {
   title: 'Tools | Paulius Mikalainis',
@@ -34,9 +33,6 @@ export default function ResumeBuilderPage() {
 
       {/* AI Settings — shared key used by Job Search and Resume Builder */}
       <ApiKeySettings />
-
-      {/* Resume Tailor — auto-runs when navigated from a job card */}
-      <ResumeTailorSection />
 
       {/* AI Job Search */}
       <JobSearch />
