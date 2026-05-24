@@ -1,4 +1,5 @@
 {
-  "name": "Mikalainis.com",
-  "postCreateCommand": "npm install && npm install -g @anthropic-ai/claude-code"
+  "name": "Node.js & AI Tools",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "postCreateCommand": "npm install -g @google/gemini-cli @anthropic-ai/claude-code && bash .devcontainer/postCreate.sh"
 }
