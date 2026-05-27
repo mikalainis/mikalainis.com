@@ -37,18 +37,18 @@ export default function Hero() {
               {/* Status badge */}
               <div className="inline-flex items-center gap-2 bg-sky-400/10 border border-sky-400/20 text-sky-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-7 tracking-wide uppercase">
                 <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse flex-shrink-0" />
-                Principal Data Scientist · Verizon · NJ
+                Available for new engagements
               </div>
 
               {/* Name */}
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-slate-100 leading-[1.05] tracking-tight mb-4">
-                Paulius<br />
-                <span className="text-sky-400">Mikalainis</span>
+                Building smarter systems for<br />
+                <span className="text-sky-400">modern businesses</span>
               </h1>
 
               {/* Role tags */}
               <div className="flex flex-wrap gap-2 mb-6">
-                {TAGS.map((tag) => (
+                {['AI Agent Development', 'Workflow Automation', 'Legacy Modernization'].map((tag) => (
                   <span
                     key={tag}
                     className="text-xs font-medium text-slate-400 bg-slate-800 border border-slate-700/70 px-3 py-1.5 rounded-full"
@@ -60,12 +60,10 @@ export default function Hero() {
 
               {/* Bio */}
               <p className="text-slate-400 text-base sm:text-lg leading-relaxed mb-8 max-w-xl">
-                9+ years designing and deploying{' '}
-                <span className="text-slate-300">scalable ML systems</span> and{' '}
-                <span className="text-slate-300">GenAI / LLM applications</span> that
-                translate enterprise data into strategic business outcomes — with a
-                documented{' '}
-                <span className="text-sky-400 font-semibold">$14M monthly impact</span>.
+                Specializing in <span className="text-slate-300">AI agent development</span>, 
+                <span className="text-slate-300">digital workflow automation</span>, and 
+                <span className="text-slate-300">legacy system modernization</span> for small to mid-size businesses. 
+                9+ years of experience delivering documented <span className="text-sky-400 font-semibold">40% avg. process reduction</span>.
               </p>
 
               {/* CTA buttons */}
@@ -74,16 +72,16 @@ export default function Hero() {
                   href="mailto:pmikalainis@gmail.com"
                   className="inline-flex items-center gap-2 bg-sky-400 text-slate-900 px-6 py-3 rounded-lg font-bold text-sm hover:bg-sky-300 transition-all duration-200 hover:shadow-xl hover:shadow-sky-400/25 hover:-translate-y-0.5"
                 >
-                  Get In Touch
+                  Start a conversation
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </a>
                 <a
-                  href="#experience"
+                  href="#projects"
                   className="inline-flex items-center gap-2 border border-slate-700 text-slate-300 px-6 py-3 rounded-lg font-medium text-sm hover:border-sky-400/50 hover:text-sky-400 hover:bg-sky-400/5 transition-all duration-200"
                 >
-                  View Experience
+                  View Projects
                 </a>
               </div>
 

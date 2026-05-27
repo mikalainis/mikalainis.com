@@ -2,11 +2,11 @@
 import { useState, useEffect } from 'react'
 
 const NAV_LINKS = [
-  { href: '#about', label: 'About' },
-  { href: '#skills', label: 'Skills' },
-  { href: '#experience', label: 'Experience' },
-  { href: '#credentials', label: 'Credentials' },
-  { href: '#contact', label: 'Contact' },
+  { href: '/#services', label: 'Services' },
+  { href: '/#projects', label: 'Projects' },
+  { href: '/consultancy.html', label: 'Consulting' },
+  { href: '/resume.html', label: 'Résumé' },
+  { href: '/#contact', label: 'Contact' },
 ]
 
 export default function Navigation() {

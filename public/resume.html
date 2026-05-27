@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résumé | Paulius Mikalainis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0F172A;
+            --surface: rgba(30, 41, 59, 0.5);
+            --border: rgba(51, 65, 85, 0.7);
+            --text-primary: #F1F5F9;
+            --text-secondary: #94A3B8;
+            --accent: #38BDF8;
+            --accent-muted: rgba(56, 189, 248, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.5;
+            padding: 4rem 1.5rem;
+        }
+
+        .resume-container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 2rem;
+            margin-bottom: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .branding {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-box {
+            width: 2.5rem;
+            height: 2.5rem;
+            background-color: var(--accent);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg);
+            font-weight: 800;
+            font-size: 1rem;
+        }
+
+        .brand-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.025em;
+        }
+
+        .profile-section {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .profile-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 1rem;
+            border: 2px solid var(--accent);
+            object-fit: cover;
+            object-position: top;
+        }
+
+        h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.025em; line-height: 1; }
+        .contact-info { text-align: right; font-size: 0.875rem; color: var(--text-secondary); }
+        .contact-info a { color: var(--accent); text-decoration: none; }
+
+        section { margin-bottom: 3rem; }
+        h2 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        h2::after { content: ""; flex: 1; height: 1px; background-color: var(--border); }
+
+        .job { margin-bottom: 2.5rem; }
+        .job-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+        .job-title { font-weight: 700; color: var(--text-primary); font-size: 1.125rem; }
+        .job-company { color: var(--text-secondary); font-size: 0.875rem; font-weight: 500; }
+        .job-subtitle { color: var(--accent); font-size: 0.875rem; font-weight: 600; margin-top: 0.125rem; }
+        .job-period { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); background: var(--surface); padding: 0.25rem 0.75rem; border-radius: 9999px; border: 1px solid var(--border); white-space: nowrap; }
+
+        .highlights { list-style: none; padding-left: 0; margin-top: 0.75rem; }
+        .highlights li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+            color: #CBD5E1; /* slate-300 */
+        }
+        .highlights li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+        .skill-cat { font-weight: 700; font-size: 0.875rem; color: var(--text-primary); margin-bottom: 0.5rem; }
+        .skill-list { font-size: 0.875rem; color: var(--text-secondary); }
+
+        .edu-item { margin-bottom: 1.5rem; }
+        .edu-degree { font-weight: 700; color: var(--text-primary); }
+        .edu-school { font-size: 0.875rem; color: var(--text-secondary); }
+
+        @media print {
+            body { background: white; color: black; padding: 20px; }
+            :root { --text-primary: black; --text-secondary: #333; --accent: #000; --border: #ddd; }
+            .resume-container { max-width: 100%; }
+            .job-period { border: 1px solid #ccc; color: black; }
+            .highlights li { color: #333; }
+            .profile-photo { filter: grayscale(100%); border: 1px solid #000; }
+            .logo-box { border: 1px solid #000; background: transparent; color: black; }
+            header { border-bottom: 2px solid black; }
+            a { color: black !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="resume-container">
+        <div class="branding">
+            <div class="logo-box">PM</div>
+            <span class="brand-name">Mikalainis Consulting</span>
+        </div>
+
+        <header>
+            <div class="profile-section">
+                <img src="/photo.jpg" alt="Paulius Mikalainis" class="profile-photo">
+                <div>
+                    <h1>Paulius Mikalainis</h1>
+                    <p style="color: var(--accent); font-weight: 600; margin-top: 0.5rem;">Principal Data Scientist & AI Leader</p>
+                </div>
+            </div>
+            <div class="contact-info">
+                <p>Basking Ridge, NJ</p>
+                <p><a href="tel:201-919-6519">201-919-6519</a></p>
+                <p><a href="mailto:pmikalainis@gmail.com">pmikalainis@gmail.com</a></p>
+                <p><a href="https://linkedin.com/in/pmikalainis">linkedin.com/in/pmikalainis</a></p>
+                <p><a href="https://mikalainis.com">mikalainis.com</a></p>
+            </div>
+        </header>
+
+        <section>
+            <h2>Experience</h2>
+            
+            <div class="job">
+                <div class="job-header">
+                    <div>
+                        <div class="job-title">Principal Data Scientist / BI Manager</div>
+                        <div class="job-company">Verizon · Basking Ridge, NJ</div>
+                        <div class="job-subtitle">Reporting & Planning Process Automation</div>
+                    </div>
+                    <div class="job-period">Dec 2025 – Present</div>
+                </div>
+                <ul class="highlights">
+                    <li>Led design of scalable ML systems for financial planning, reducing process complexity by 83% and accelerating EPM completion by 50%.</li>
+                    <li>Established data governance and validation protocols within critical financial data platforms for robust ML model training and inference.</li>
+                    <li>Engineered Python data pipelines integrating distributed computing for large-scale enterprise finance workflows.</li>
+                </ul>
+            </div>
+
+            <div class="job">
+                <div class="job-header">
+                    <div>
+                        <div class="job-title">BI Manager</div>
+                        <div class="job-company">Verizon · Basking Ridge, NJ</div>
+                        <div class="job-subtitle">Oracle EPM Support — Corporate Finance</div>
+                    </div>
+                    <div class="job-period">Dec 2023 – Dec 2025</div>
+                </div>
+                <ul class="highlights">
+                    <li>Translated complex financial requirements into enterprise planning applications, enhancing ML-driven insights and accelerating corporate target planning.</li>
+                    <li>Mentored data analysts in Python scripting for automated reporting and advanced analytics.</li>
+                    <li>Deployed automated Python solutions for hands-on data engineering, streamlining corporate consolidation processes.</li>
+                </ul>
+            </div>
+
+            <div class="job">
+                <div class="job-header">
+                    <div>
+                        <div class="job-title">BI Manager</div>
+                        <div class="job-company">Verizon · Basking Ridge, NJ</div>
+                        <div class="job-subtitle">Customer Profitability — VCG Commercial Finance</div>
+                    </div>
+                    <div class="job-period">May 2021 – Dec 2023</div>
+                </div>
+                <ul class="highlights">
+                    <li>Migrated and re-architected a legacy customer profitability model to a scalable Python-based ML platform, enhancing analytical accuracy.</li>
+                    <li>Designed and deployed an enterprise decision intelligence solution with predictive ML models to drive C-suite marketing and retention strategy.</li>
+                    <li>Integrated new data sources into the enterprise data warehouse, enhancing quality critical for scalable ML model training.</li>
+                </ul>
+            </div>
+
+            <div class="job">
+                <div class="job-header">
+                    <div>
+                        <div class="job-title">BI Manager</div>
+                        <div class="job-company">Verizon · Basking Ridge, NJ</div>
+                        <div class="job-subtitle">Service Pricing — VCG Commercial Finance</div>
+                    </div>
+                    <div class="job-period">Feb 2019 – Apr 2021</div>
+                </div>
+                <ul class="highlights">
+                    <li>Designed a predictive ML regression model for optimizing customer promotional offerings, implementing a data-driven retention strategy.</li>
+                    <li>Translated ML findings into actionable recommendations resulting in a documented $14M monthly promotional cost avoidance.</li>
+                    <li>Mentored financial analysts in Python for ML model development, fostering a data-driven culture.</li>
+                </ul>
+            </div>
+
+            <div class="job">
+                <div class="job-header">
+                    <div>
+                        <div class="job-title">Data Scientist</div>
+                        <div class="job-company">Verizon · Basking Ridge, NJ</div>
+                        <div class="job-subtitle">Internal Audit</div>
+                    </div>
+                    <div class="job-period">Nov 2016 – Jan 2019</div>
+                </div>
+                <ul class="highlights">
+                    <li>Developed and deployed Python-based ML solutions including NLP models to optimize risk survey classification for enterprise audit.</li>
+                    <li>Significantly reduced manual effort and delivered actionable insights in a financial risk management context.</li>
+                </ul>
+            </div>
+
+            <div class="job">
+                <div class="job-header">
+                    <div>
+                        <div class="job-title">BI Analyst</div>
+                        <div class="job-company">Horizon BCBS of New Jersey · Newark, NJ</div>
+                        <div class="job-subtitle">Healthcare Analytics</div>
+                    </div>
+                    <div class="job-period">Sep 2006 – Oct 2016</div>
+                </div>
+                <ul class="highlights">
+                    <li>Performed data analysis and reporting for healthcare analytics, contributing insights on patient outcomes and operational efficiency.</li>
+                    <li>Built data manipulation and visualization capabilities that laid the groundwork for future ML applications.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>Technical Skills</h2>
+            <div class="skills-grid">
+                <div>
+                    <div class="skill-cat">AI Agent Development</div>
+                    <div class="skill-list">LLM Orchestration, RAG Systems, Multi-agent Workflows, Prompt Engineering, Gemini / Claude API</div>
+                </div>
+                <div>
+                    <div class="skill-cat">Workflow Automation</div>
+                    <div class="skill-list">Python Automation, API Integration, Data Pipelines, ETL, Error Handling, Scalable Systems</div>
+                </div>
+                <div>
+                    <div class="skill-cat">Data Engineering</div>
+                    <div class="skill-list">Python, SQL, Apache Spark, BigQuery, Snowflake, Data Governance</div>
+                </div>
+                <div>
+                    <div class="skill-cat">Legacy Modernization</div>
+                    <div class="skill-list">System Audits, Cloud Migration, SQL Optimization, Oracle EPM, Architecture Redesign</div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Education</h2>
+            <div class="edu-item">
+                <div class="edu-degree">Master of Science in Computer Science</div>
+                <div class="edu-school">New Jersey Institute of Technology · Newark, NJ</div>
+            </div>
+            <div class="edu-item">
+                <div class="edu-degree">Bachelor of Science in Operations Research & Computer Analysis</div>
+                <div class="edu-school">United States Coast Guard Academy · New London, CT</div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Certifications</h2>
+            <div class="skill-list">
+                Google 5-Day AI Agents Intensive (Nov 2025) · 
+                Johns Hopkins Data Science Specialization · 
+                NJIT Certificate of Big Data Essentials
+            </div>
+        </section>
+        
+        <p style="text-align: center; margin-top: 4rem;"><a href="/consultancy.html" style="color: var(--accent); font-size: 0.875rem; text-decoration: none;">&larr; Back to Mikalainis Consulting</a></p>
+    </div>
+</body>
+</html>

@@ -1455,27 +1455,62 @@ function saveApplications() {
 function genId() { return 'app_' + Date.now() + '_' + Math.random().toString(36).substr(2,5); }
 
 function addApplication(app) {
-    // Dedupe: same company + role (case-insensitive)
-    const key = (app.company + '|' + app.role).toLowerCase().trim();
-    const exists = applications.find(a =>
-        (a.company + '|' + a.role).toLowerCase().trim() === key
-    );
+    // Normalize strings for matching
+    const norm = s => (s || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+    const companyNorm = norm(app.company);
+    const roleNorm = norm(app.role);
+
+    // Find existing: match company AND (role fuzzy match OR very similar)
+    const exists = applications.find(a => {
+        const aCompanyNorm = norm(a.company);
+        const aRoleNorm = norm(a.role);
+        
+        // Exact company match
+        if (aCompanyNorm === companyNorm || aCompanyNorm.includes(companyNorm) || companyNorm.includes(aCompanyNorm)) {
+            // Role match: one contains the other or they are very similar
+            if (aRoleNorm === roleNorm || aRoleNorm.includes(roleNorm) || roleNorm.includes(aRoleNorm)) {
+                return true;
+            }
+        }
+        return false;
+    });
+
     // Status upgrade priority: rejected=3 (final) > confirmed=2 > in_progress=1
     const rank = { rejected:3, confirmed:2, in_progress:1 };
+    
     if (exists) {
-        if ((rank[app.status]||0) >= (rank[exists.status]||0)) {
-            exists.status      = app.status;
-            exists.nextStep    = app.nextStep    || exists.nextStep;
-            exists.rejectionReason = app.rejectionReason || exists.rejectionReason;
-            exists.notes       = app.notes       || exists.notes;
-            exists.rawSnippets = [...(exists.rawSnippets||[]), ...(app.rawSnippets||[])];
+        // Update existing record
+        const incomingRank = rank[app.status] || 0;
+        const existingRank = rank[exists.status] || 0;
+
+        if (incomingRank >= existingRank) {
+            exists.status = app.status;
+            if (app.nextStep) exists.nextStep = app.nextStep;
+            if (app.rejectionReason) exists.rejectionReason = app.rejectionReason;
         }
-        return false; // was duplicate
+        
+        // Always append new notes/snippets if not already present
+        if (app.notes && !exists.notes.includes(app.notes)) {
+            exists.notes = (exists.notes + '\n\n' + app.notes).trim();
+        }
+        if (app.link && !exists.link) exists.link = app.link;
+        
+        const newSnippets = (app.rawSnippets || []).filter(s => !(exists.rawSnippets || []).includes(s));
+        exists.rawSnippets = [...(exists.rawSnippets || []), ...newSnippets];
+        
+        exists.updatedAt = new Date().toISOString().slice(0, 10);
+        return false; // was duplicate/updated
     }
+
+    // New application
     applications.unshift({
         id: genId(),
-        date: new Date().toISOString().slice(0,10),
+        date: app.date || new Date().toISOString().slice(0,10),
+        updatedAt: new Date().toISOString().slice(0,10),
         rawSnippets: [],
+        notes: '',
+        rejectionReason: '',
+        nextStep: '',
         ...app
     });
     return true; // was new
@@ -1541,14 +1576,8 @@ async function startEmailScan() {
     const finalQuery = query + dateFilter;
 
     try {
-        // Clear all previous gmail-sourced entries before fresh scan
-        // Manual entries are preserved
-        // Keep only manually-added entries; clear gmail + drive + seed entries
-        const manualEntries = applications.filter(a => a.source === 'manual');
-        applications = manualEntries;
-        saveApplications();
-        renderDashboard(); // reset counts to manual-only baseline
-        scanLog(`🗑 Cleared previous scan results (kept ${manualEntries.length} manual entries)`,'text-slate-400');
+        // Preserve existing entries to allow status updates via deduplication
+        scanLog(`🔄 Starting incremental scan (preserving ${applications.length} existing entries)...`,'text-slate-400');
 
         scanLog(`📧 Searching Gmail for: "${finalQuery.slice(0,80)}${finalQuery.length>80?'...':''}"...`);
         setScanProgress(5, 'Fetching email list...');
@@ -1586,7 +1615,10 @@ async function startEmailScan() {
                         const headers = msg.payload?.headers || [];
                         const get = name => (headers.find(h => h.name === name) || {}).value || '';
                         const receivedDate = msg.internalDate ? new Date(parseInt(msg.internalDate)).toISOString().slice(0,10) : parseEmailDate(get('Date'));
-                        return { id:m.id, subject:get('Subject'), from:get('From'), date:receivedDate, link:`https://mail.google.com/mail/u/0/#inbox/${msg.id}`, snippet:msg.snippet||'' };
+                        const from = get('From');
+                        const domainMatch = from.match(/@([^>\s]+)/);
+                        const domain = domainMatch ? domainMatch[1] : '';
+                        return { id:m.id, subject:get('Subject'), from, domain, date:receivedDate, link:`https://mail.google.com/mail/u/0/#inbox/${msg.id}`, snippet:msg.snippet||'' };
                     } catch(e) { return null; }
                 })()
             ));
@@ -1607,16 +1639,17 @@ async function startEmailScan() {
             scanLog(`🤖 Classifying batch ${Math.ceil(i/chunkSize)+1}...`, 'text-purple-300');
 
             const emailData = chunk.map((e,idx) =>
-                `[${idx}] Subject:"${e.subject}" | From:${e.from} | Date:${e.date} | Snippet:${e.snippet}`
+                `[${idx}] Subject:"${e.subject}" | From:"${e.from}" | Domain:"${e.domain}" | Snippet:"${e.snippet}"`
             ).join('\n');
 
-            const prompt = `Classify these emails as job application related. For each relevant one extract:
-- index, company, role, status (must be exactly one of: "confirmed", "in_progress", "rejected"), nextStep, rejectionReason
-- Do NOT include a date field — dates are taken directly from email headers
-- "confirmed" = employer acknowledged/received application via email
-- "in_progress" = applied but awaiting response, or action needed
-- "rejected" = explicitly not moving forward
-Ignore newsletters, bank emails, non-job emails. Return ONLY a JSON array. If none qualify, return [].
+            const prompt = `Classify these emails as job application updates. For each relevant one, extract:
+- index, company, role, status, nextStep, rejectionReason
+- STATUS must be: "confirmed" (received), "in_progress" (interviewing/action), or "rejected".
+- COMPANY: Look at Subject, From name, and Domain. If not found, check the end of the Snippet for signatures like "Best, [Company]" or "[Company] Team".
+- ROLE: Extract the job title from the Subject (e.g., "Thank you for your application - [Job Title]").
+- REJECTION: If the snippet contains phrases like "decided to move forward with other candidates", "skills are a closer match", "not selected", "position has been filled", "won't be moving forward", set status to "rejected".
+
+Return ONLY a JSON array of objects. If none qualify, return [].
 
 EMAILS:
 ${emailData}`;
@@ -1847,11 +1880,11 @@ function parseEmailDate(rawDate) {
 const PRIMARY_INBOX = "-category:promotions -category:social -in:spam -in:trash";
 
 const SCAN_QUERY_PRESETS = {
-    smart: `${PRIMARY_INBOX} ((from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:taleo.net OR from:adp.com OR from:icims.com OR from:smartrecruiters.com OR from:jobvite.com OR from:successfactors.com OR from:brassring.com OR from:candidatecare.com OR from:indeedapply.com OR from:linkedin.com OR from:indeed.com OR from:ziprecruiter.com) OR (subject:("thank you for applying") OR subject:("your application") OR subject:("application received") OR subject:("application for") OR subject:("we received your application") OR subject:("application update") OR subject:("interview") OR subject:("job offer") OR subject:("offer letter") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("position has been filled") OR subject:("other candidates")))`,
+    smart: `${PRIMARY_INBOX} ((from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:taleo.net OR from:adp.com OR from:icims.com OR from:smartrecruiters.com OR from:jobvite.com OR from:successfactors.com OR from:brassring.com OR from:candidatecare.com OR from:indeedapply.com OR from:linkedin.com OR from:indeed.com OR from:ziprecruiter.com) OR (subject:("thank you for applying") OR subject:("your application") OR subject:("application received") OR subject:("application for") OR subject:("we received your application") OR subject:("application update") OR subject:("interview") OR subject:("job offer") OR subject:("offer letter") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("position has been filled") OR subject:("other candidates") OR subject:("decided to move forward") OR subject:("not selected")))`,
 
     confirmations: `${PRIMARY_INBOX} (subject:("thank you for applying") OR subject:("application received") OR subject:("we received your application") OR subject:("your application for") OR subject:("successfully received") OR subject:("application submitted"))`,
 
-    rejections: `${PRIMARY_INBOX} (subject:("unfortunately") OR subject:("not moving forward") OR subject:("other candidates") OR subject:("position has been filled") OR subject:("not selected") OR subject:("decided to move forward with other") OR subject:("not a match") OR subject:("application update"))`,
+    rejections: `${PRIMARY_INBOX} (subject:("unfortunately") OR subject:("not moving forward") OR subject:("other candidates") OR subject:("position has been filled") OR subject:("not selected") OR subject:("decided to move forward") OR subject:("skills are a closer match") OR subject:("not a match") OR subject:("application update"))`,
 
     interviews: `${PRIMARY_INBOX} (subject:("interview") OR subject:("next steps") OR subject:("phone screen") OR subject:("technical screen") OR subject:("assessment") OR subject:("hiring manager") OR subject:("schedule a") OR subject:("onsite") OR subject:("virtual interview") OR subject:("coding challenge"))`,
 
@@ -2000,11 +2033,9 @@ function renderTable() {
                 <div class="font-semibold text-gray-900 truncate">${escHtml(a.company)}</div>
                 <div class="text-xs text-gray-500 truncate">${escHtml(a.role)}</div>
             </div>
-            <div class="text-gray-500 text-xs font-mono flex items-center gap-1">
-                ${a.date || '—'}
-                ${a.link ? `<a href="${a.link}" target="_blank" title="Open email" class="text-blue-400 hover:text-blue-600 transition-colors" onclick="event.stopPropagation()">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                </a>` : ''}
+            <div class="text-gray-500 text-xs font-mono flex flex-col items-start gap-0.5">
+                <span>${a.date || '—'}</span>
+                ${a.updatedAt && a.updatedAt !== a.date ? `<span class="text-[9px] text-blue-500 font-bold uppercase tracking-tighter" title="Updated by scan">Upd: ${a.updatedAt}</span>` : ''}
             </div>
             <div>${statusBadge(a.status)}</div>
             <div class="text-xs text-gray-600 truncate">${escHtml(a.nextStep || '—')}</div>

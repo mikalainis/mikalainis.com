@@ -1,24 +1,28 @@
 const PROJECTS = [
   {
-    title: 'AI-Powered Resume Builder',
-    tech: 'JavaScript · Tailwind · Gemini AI',
-    link: '/tools/resume-builder',
-    outcomes: 'Gemini AI integration, PDF export, Job match scoring',
+    title: 'Job Application Tracker',
+    tech: 'Python · Gmail API · NLP · SQLite',
+    link: '/tools/resume-builder.html',
+    outcomes: 'Email-parsing agent that monitors inboxes, extracts application data, deduplicates records, and tracks status changes.',
+    category: 'Automation'
   },
   {
-    title: 'Enterprise Analytics Automation — Verizon EPM',
-    tech: 'Oracle EPM · Python · ETL',
-    outcomes: '83% complexity reduction, 50% faster delivery, Enterprise-scale',
+    title: 'Intelligent Workflow Engine',
+    tech: 'Claude API · Webhooks · Node.js',
+    outcomes: 'LLM-backed routing system that classifies inbound requests and dispatches to the right handler, cutting response time by 60%.',
+    category: 'AI-powered'
   },
   {
-    title: 'Customer Profitability Intelligence Platform',
-    tech: 'Qlik · ML',
-    outcomes: 'C-suite dashboards, Python migration, Retention strategy',
+    title: 'Oracle EPM Modernization',
+    tech: 'Oracle EPM · ETL · Power BI · SQL',
+    outcomes: 'Audit and redesign of a legacy Oracle EPM reporting stack with modern ETL pipelines and BI layer.',
+    category: 'Legacy modernization'
   },
   {
-    title: 'Predictive Promotional Pricing Model',
-    tech: 'Predictive Modeling · Python ML',
-    outcomes: '$14M/mo cost avoidance, Regression modeling, Upsell strategy',
+    title: 'SMB Operations Assistant',
+    tech: 'RAG · Slack · Google Drive',
+    outcomes: 'AI agent integrated with Slack and Google Workspace for operational Q&A, report summaries, and drafting.',
+    category: 'AI-powered'
   },
 ]
 

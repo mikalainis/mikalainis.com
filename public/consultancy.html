@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikalainis Consulting | AI & Automation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0F172A;
+            --surface: rgba(30, 41, 59, 0.5);
+            --surface-hover: rgba(30, 41, 59, 0.7);
+            --border: rgba(51, 65, 85, 0.7);
+            --text-primary: #F1F5F9;
+            --text-secondary: #94A3B8;
+            --accent: #38BDF8;
+            --accent-hover: #7DD3FC;
+            --accent-muted: rgba(56, 189, 248, 0.1);
+            --accent-glow: rgba(56, 189, 248, 0.25);
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Utils */
+        .container {
+            max-width: 1152px; /* 6xl */
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .section-padding {
+            padding: 6rem 0;
+        }
+
+        .text-accent { color: var(--accent); }
+        .text-secondary { color: var(--text-secondary); }
+        
+        .btn {
+            display: inline-flex;
+            items-center: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px var(--accent-glow);
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: #CBD5E1; /* slate-300 */
+            border: 1px solid #334155; /* slate-700 */
+        }
+
+        .btn-ghost:hover {
+            border-color: rgba(56, 189, 248, 0.5);
+            color: var(--accent);
+            background-color: var(--accent-muted);
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 50;
+            transition: all 0.3s;
+        }
+
+        nav.scrolled {
+            background-color: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #1E293B;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo-box {
+            width: 2.25rem;
+            height: 2.25rem;
+            background-color: var(--accent);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg);
+            font-weight: 800;
+            font-size: 0.875rem;
+        }
+
+        .logo-text {
+            color: #E2E8F0; /* slate-200 */
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .nav-links {
+            display: none;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .nav-links { display: flex; }
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            background-color: #0F172A;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px), 
+                linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+            background-size: 64px 64px;
+        }
+
+        .glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 9999px;
+            filter: blur(80px);
+            opacity: 0.05;
+        }
+
+        .glow-1 { top: 10%; left: -100px; background-color: var(--accent); }
+        .glow-2 { bottom: 10%; right: -100px; background-color: #1D4ED8; } /* blue-700 */
+
+        .availability-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--accent-muted);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: var(--accent);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            margin-bottom: 1.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .pulse-dot {
+            width: 0.375rem;
+            height: 0.375rem;
+            background-color: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            letter-spacing: -0.025em;
+        }
+
+        @media (min-width: 768px) {
+            h1 { font-size: 4rem; }
+        }
+
+        .hero-subtext {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 36rem;
+            margin-bottom: 2rem;
+        }
+
+        .hero-ctas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        /* Stats */
+        .stats-strip {
+            border-top: 1px solid #1E293B;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            padding: 1.25rem 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            border-right: 1px solid #1E293B;
+        }
+
+        .stat-item:last-child {
+            border-right: none;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748B; /* slate-500 */
+            margin-top: 0.25rem;
+        }
+
+        @media (min-width: 768px) {
+            .stat-value { font-size: 2rem; }
+        }
+
+        /* Sections */
+        .section-tag {
+            color: var(--accent);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+
+        h2 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .accent-bar {
+            width: 3rem;
+            height: 0.125rem;
+            background-color: var(--accent);
+            margin-bottom: 3.5rem;
+        }
+
+        /* Services */
+        .services-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 768px) {
+            .services-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .service-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .service-card:hover {
+            border-color: rgba(56, 189, 248, 0.3);
+            background-color: var(--surface-hover);
+        }
+
+        .service-icon {
+            width: 3rem;
+            height: 3rem;
+            background-color: var(--accent-muted);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+        }
+
+        .service-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #F8FAFC;
+        }
+
+        .service-card p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Projects */
+        .projects-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 768px) {
+            .projects-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .project-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 1.5rem; /* rounded-3xl in original but this is p-6 */
+            transition: all 0.2s;
+        }
+
+        .project-card:hover {
+            border-color: rgba(56, 189, 248, 0.2);
+            background-color: var(--surface-hover);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .project-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #F8FAFC;
+        }
+
+        .project-tag {
+            color: var(--accent);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .project-tag.web-design { color: #F472B6; }
+        .project-tag.community { color: #A78BFA; }
+
+        .project-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--accent);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-top: 1.25rem;
+        }
+
+        .project-link:hover {
+            color: var(--accent-hover);
+            gap: 0.6rem;
+        }
+
+        .project-meta {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+        }
+
+        .project-desc {
+            font-size: 1rem;
+            color: #E2E8F0;
+            line-height: 1.6;
+        }
+
+        .tags-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .tag-pill {
+            font-size: 0.75rem;
+            background-color: #1E293B;
+            border: 1px solid #334155;
+            color: var(--text-secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+        }
+
+        /* Contact Section */
+        .contact-cta {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .contact-cta h2 {
+            font-size: 2.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-cta p {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            margin-bottom: 2.5rem;
+            max-width: 32rem;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid #1E293B;
+            padding: 3rem 0;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        @media (min-width: 768px) {
+            .footer-content { flex-direction: row; }
+        }
+
+        .footer-tagline {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* Stepper Styles */
+        .stepper-tabs {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .stepper-tabs {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .stepper-tabs button:nth-child(n+4) {
+                display: none;
+            }
+        }
+
+        .step-tab {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1.25rem 1rem;
+            border-radius: 1rem;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            outline: none;
+            width: 100%;
+        }
+
+        .step-tab:hover {
+            background-color: var(--surface-hover);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .step-tab.active {
+            border-color: var(--accent);
+            background-color: var(--accent-muted);
+            color: var(--text-primary);
+            box-shadow: 0 0 15px -3px var(--accent-glow);
+        }
+
+        .step-tab .step-num {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+
+        .step-tab .step-name {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .step-tab .step-duration {
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .phase-panel {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .phase-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .phase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2.5rem;
+            gap: 2rem;
+        }
+
+        @media (max-width: 640px) {
+            .phase-header { flex-direction: column; gap: 1rem; }
+        }
+
+        .phase-badge {
+            background-color: var(--accent-muted);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: var(--accent);
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 0.375rem 0.875rem;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            letter-spacing: 0.05em;
+        }
+
+        .phase-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .phase-content { grid-template-columns: 1fr; gap: 2rem; }
+        }
+
+        .phase-col h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            margin-bottom: 1.25rem;
+            font-weight: 700;
+        }
+
+        .phase-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .phase-list li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.875rem;
+            font-size: 0.9375rem;
+            color: #CBD5E1;
+        }
+
+        .phase-list li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .phase-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        @media (max-width: 640px) {
+            .phase-footer { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+        }
+
+        .phase-outcome {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .phase-outcome strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Page Navigation Styles */
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .nav-links a[aria-current="page"] {
+            color: var(--accent);
+            position: relative;
+        }
+
+        .nav-links a[aria-current="page"]::after {
+            content: "";
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--accent);
+        }
+
+        /* Use Case Styles */
+        .use-cases-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+
+        .use-case-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .use-case-card:hover {
+            border-color: rgba(56, 189, 248, 0.3);
+            background-color: var(--surface-hover);
+        }
+
+        .uc-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+
+        .uc-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .uc-section h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+        }
+
+        .uc-section p {
+            font-size: 1rem;
+            color: #CBD5E1;
+            line-height: 1.6;
+        }
+
+        .uc-meta {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(51, 65, 85, 0.3);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .uc-meta strong {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <a href="#" class="logo" onclick="showPage('home-page'); return false;">
+                    <div class="logo-box">PM</div>
+                    <span class="logo-text">Mikalainis Consulting</span>
+                </a>
+                <div class="nav-links">
+                    <a href="#" onclick="showPage('home-page', 'services'); return false;">Services</a>
+                    <a href="#" onclick="showPage('home-page', 'how-it-works'); return false;">How It Works</a>
+                    <a href="#" id="nav-use-cases" onclick="showPage('use-cases-page'); return false;">Use Cases</a>
+                    <a href="#" onclick="showPage('home-page', 'projects'); return false;">Projects</a>
+                    <a href="/resume.html">Résumé</a>
+                    <a href="#" onclick="showPage('home-page', 'contact'); return false;" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Get In Touch</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Home Page -->
+    <div id="home-page" class="page active">
+        <!-- Hero -->
+        <section class="hero">
+            <div class="hero-bg">
+                <div class="grid-overlay"></div>
+                <div class="glow glow-1"></div>
+                <div class="glow glow-2"></div>
+            </div>
+            <div class="container">
+                <div class="availability-badge">
+                    <span class="pulse-dot"></span>
+                    Available for new engagements
+                </div>
+                <h1>Building smarter systems for<br><span class="text-accent">modern businesses</span></h1>
+                <p class="hero-subtext">AI agent development, digital workflow automation, and legacy system redesign for small to mid-size businesses.</p>
+                <div class="hero-ctas">
+                    <a href="#" onclick="showPage('home-page', 'contact'); return false;" class="btn btn-primary">
+                        Start a conversation
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                    <a href="#" onclick="showPage('home-page', 'projects'); return false;" class="btn btn-ghost">View projects</a>
+                </div>
+            </div>
+        </section>
+
+    <!-- Stats Strip -->
+    <div class="stats-strip">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">8+</div>
+                    <div class="stat-label">Years of experience</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">15+</div>
+                    <div class="stat-label">Systems modernized</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">40%</div>
+                    <div class="stat-label">Avg. process reduction</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services -->
+    <section id="services" class="section-padding">
+        <div class="container">
+            <p class="section-tag">Services</p>
+            <h2>Strategic AI & Systems Engineering</h2>
+            <div class="accent-bar"></div>
+            
+            <div class="services-grid">
+                <!-- Service 1 -->
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12L2.1 14.9"/><path d="M12 12l9.9-2.9"/></svg>
+                    </div>
+                    <h3>AI Agent Development</h3>
+                    <p>Custom intelligent agents that automate research, triage, communication, and decision-making workflows.</p>
+                </div>
+                <!-- Service 2 -->
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3>Digital Workflow Automation</h3>
+                    <p>End-to-end automation of repetitive business processes to reduce manual effort and eliminate human errors.</p>
+                </div>
+                <!-- Service 3 -->
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3>Legacy Modernization</h3>
+                    <p>Audit, redesign, and incremental migration of aging systems while preserving institutional knowledge.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="section-padding" style="border-top: 1px solid #1E293B;">
+        <div class="container">
+            <p class="section-tag">How it works</p>
+            <h2>A proven path from idea to impact</h2>
+            <div class="accent-bar"></div>
+
+            <!-- Tabs -->
+            <div class="stepper-tabs">
+                <button class="step-tab active" onclick="showPhase(0)">
+                    <span class="step-num">01 DISCOVER</span>
+                    <span class="step-name">Strategy</span>
+                    <span class="step-duration">Week 1–2</span>
+                </button>
+                <button class="step-tab" onclick="showPhase(1)">
+                    <span class="step-num">02 DESIGN</span>
+                    <span class="step-name">Architecture</span>
+                    <span class="step-duration">Week 2–3</span>
+                </button>
+                <button class="step-tab" onclick="showPhase(2)">
+                    <span class="step-num">03 BUILD</span>
+                    <span class="step-name">Development</span>
+                    <span class="step-duration">Week 3–8</span>
+                </button>
+                <button class="step-tab" onclick="showPhase(3)">
+                    <span class="step-num">04 DEPLOY</span>
+                    <span class="step-name">Launch</span>
+                    <span class="step-duration">Week 8–9</span>
+                </button>
+                <button class="step-tab" onclick="showPhase(4)">
+                    <span class="step-num">05 OPTIMIZE</span>
+                    <span class="step-name">Evolution</span>
+                    <span class="step-duration">Ongoing</span>
+                </button>
+            </div>
+
+            <!-- Phase Panels -->
+            <div id="phase-container">
+                <!-- 01 DISCOVER -->
+                <div class="phase-panel active">
+                    <div class="phase-header">
+                        <div style="max-width: 600px;">
+                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Business & process discovery</h3>
+                            <p class="text-secondary">We map your current workflows, identify bottlenecks, and assess which processes are strong candidates for automation or AI augmentation.</p>
+                        </div>
+                        <span class="phase-badge">Free consultation</span>
+                    </div>
+                    <div class="phase-content">
+                        <div class="phase-col">
+                            <h4>Activities</h4>
+                            <ul class="phase-list">
+                                <li>Stakeholder interviews and process walkthroughs</li>
+                                <li>Current system and integration inventory</li>
+                                <li>Volume, frequency, and complexity assessment</li>
+                                <li>Data quality and access evaluation</li>
+                            </ul>
+                        </div>
+                        <div class="phase-col">
+                            <h4>Deliverables</h4>
+                            <ul class="phase-list">
+                                <li>Process map of target workflows</li>
+                                <li>Automation opportunity scorecard</li>
+                                <li>Prioritized backlog of improvements</li>
+                                <li>Estimated ROI per initiative</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="phase-footer">
+                        <div class="phase-outcome">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span>Outcome: <strong>Clear picture of what to build and in what order</strong></span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button class="btn btn-ghost" disabled style="opacity: 0.5; cursor: not-allowed;">Prev</button>
+                            <button class="btn btn-primary" onclick="showPhase(1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 02 DESIGN -->
+                <div class="phase-panel">
+                    <div class="phase-header">
+                        <div style="max-width: 600px;">
+                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Solution architecture & planning</h3>
+                            <p class="text-secondary">We design the technical architecture for each initiative — choosing the right tools, integration patterns, and AI models before writing a line of code.</p>
+                        </div>
+                        <span class="phase-badge">Architecture</span>
+                    </div>
+                    <div class="phase-content">
+                        <div class="phase-col">
+                            <h4>Activities</h4>
+                            <ul class="phase-list">
+                                <li>Agent and microservice architecture design</li>
+                                <li>Integration pattern selection (API, webhook, polling)</li>
+                                <li>LLM and tool selection per use case</li>
+                                <li>Security, compliance, and data handling review</li>
+                            </ul>
+                        </div>
+                        <div class="phase-col">
+                            <h4>Deliverables</h4>
+                            <ul class="phase-list">
+                                <li>System architecture diagram</li>
+                                <li>Technical specification document</li>
+                                <li>Build vs. buy vs. integrate decision log</li>
+                                <li>Phased implementation roadmap</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="phase-footer">
+                        <div class="phase-outcome">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span>Outcome: <strong>Approved architecture ready for development</strong></span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button class="btn btn-ghost" onclick="showPhase(0)">Prev</button>
+                            <button class="btn btn-primary" onclick="showPhase(2)">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 03 BUILD -->
+                <div class="phase-panel">
+                    <div class="phase-header">
+                        <div style="max-width: 600px;">
+                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Iterative development & testing</h3>
+                            <p class="text-secondary">Agents, automations, and microservices are built in short sprints with working demos at each checkpoint. You see progress weekly.</p>
+                        </div>
+                        <span class="phase-badge">Core phase</span>
+                    </div>
+                    <div class="phase-content">
+                        <div class="phase-col">
+                            <h4>Activities</h4>
+                            <ul class="phase-list">
+                                <li>Agent and automation development in 1-week sprints</li>
+                                <li>Unit and integration testing at each sprint</li>
+                                <li>Weekly demos with your team for feedback</li>
+                                <li>Version-controlled, documented codebase</li>
+                            </ul>
+                        </div>
+                        <div class="phase-col">
+                            <h4>Deliverables</h4>
+                            <ul class="phase-list">
+                                <li>Working AI agents / automation pipelines</li>
+                                <li>API integrations with your existing systems</li>
+                                <li>Technical documentation and runbooks</li>
+                                <li>Admin dashboard or monitoring interface</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="phase-footer">
+                        <div class="phase-outcome">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span>Outcome: <strong>Fully tested system ready for deployment</strong></span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button class="btn btn-ghost" onclick="showPhase(1)">Prev</button>
+                            <button class="btn btn-primary" onclick="showPhase(3)">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 04 DEPLOY -->
+                <div class="phase-panel">
+                    <div class="phase-header">
+                        <div style="max-width: 600px;">
+                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Deployment & team onboarding</h3>
+                            <p class="text-secondary">We deploy to production with a structured rollout plan, train your team, and run a live monitoring period before full handoff.</p>
+                        </div>
+                        <span class="phase-badge">Go-live</span>
+                    </div>
+                    <div class="phase-content">
+                        <div class="phase-col">
+                            <h4>Activities</h4>
+                            <ul class="phase-list">
+                                <li>Staged production deployment with rollback plan</li>
+                                <li>Team training sessions (async video + live)</li>
+                                <li>Live monitoring and performance baselining</li>
+                                <li>Two-week hypercare support window</li>
+                            </ul>
+                        </div>
+                        <div class="phase-col">
+                            <h4>Deliverables</h4>
+                            <ul class="phase-list">
+                                <li>Live production system</li>
+                                <li>Training materials and recorded walkthroughs</li>
+                                <li>Monitoring dashboard with alerts</li>
+                                <li>Incident response playbook</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="phase-footer">
+                        <div class="phase-outcome">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span>Outcome: <strong>System live, team confident, baseline metrics captured</strong></span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button class="btn btn-ghost" onclick="showPhase(2)">Prev</button>
+                            <button class="btn btn-primary" onclick="showPhase(4)">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 05 OPTIMIZE -->
+                <div class="phase-panel">
+                    <div class="phase-header">
+                        <div style="max-width: 600px;">
+                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Measurement & continuous improvement</h3>
+                            <p class="text-secondary">We track KPIs against the discovery baseline, identify new automation opportunities, and evolve the system as your business grows.</p>
+                        </div>
+                        <span class="phase-badge">Continuous</span>
+                    </div>
+                    <div class="phase-content">
+                        <div class="phase-col">
+                            <h4>Activities</h4>
+                            <ul class="phase-list">
+                                <li>Monthly KPI reviews against baseline metrics</li>
+                                <li>Model and prompt tuning based on real outputs</li>
+                                <li>New opportunity identification as business evolves</li>
+                                <li>Proactive maintenance and dependency updates</li>
+                            </ul>
+                        </div>
+                        <div class="phase-col">
+                            <h4>Deliverables</h4>
+                            <ul class="phase-list">
+                                <li>Monthly performance report</li>
+                                <li>Continuous improvement backlog</li>
+                                <li>Tuned models and updated configurations</li>
+                                <li>Quarterly strategy review and roadmap update</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="phase-footer">
+                        <div class="phase-outcome">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span>Outcome: <strong>Compounding value as the system learns and expands</strong></span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button class="btn btn-ghost" onclick="showPhase(3)">Prev</button>
+                            <a href="#contact" class="btn btn-primary">Book a free discovery call</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Projects -->
+    <section id="projects" class="section-padding" style="background-color: rgba(15, 23, 42, 0.5); border-top: 1px solid #1E293B;">
+        <div class="container">
+            <p class="section-tag">Selected Work</p>
+            <h2>Proven business impact</h2>
+            <div class="accent-bar"></div>
+
+            <div class="projects-grid">
+                <!-- Project 1: Web Design & Development -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>Web Design & Development</h3>
+                        <span class="project-tag web-design">Web Design</span>
+                    </div>
+                    <p class="project-meta">Google Sheets API · Next.js · Design</p>
+                    <p class="project-desc">Custom-built websites showcasing end-to-end web design and development. Y-Swim uses a live Google Sheets backend for instant coach updates. Mikalainis.com is this professional consultancy presence.</p>
+                    <div class="tags-row">
+                        <span class="tag-pill">Frontend</span>
+                        <span class="tag-pill">CMS</span>
+                        <span class="tag-pill">Design</span>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
+                        <a href="https://y-swim.com" target="_blank" rel="noopener" class="project-link">Visit y-swim.com →</a>
+                        <span style="color: #334155; margin-top: 1.25rem;">|</span>
+                        <a href="https://mikalainis.com" target="_blank" rel="noopener" class="project-link">Visit mikalainis.com →</a>
+                    </div>
+                </div>
+
+                <!-- Project 2: AI Job Search Assistant -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>AI Job Search Assistant</h3>
+                        <span class="project-tag">AI-powered</span>
+                    </div>
+                    <p class="project-meta">Gemini API · Search Grounding</p>
+                    <p class="project-desc">AI-powered job discovery tool that finds and surfaces relevant job listings based on skills, experience, and preferences — reducing manual search time.</p>
+                    <div class="tags-row">
+                        <span class="tag-pill">GenAI</span>
+                        <span class="tag-pill">Search Tool</span>
+                        <span class="tag-pill">UX</span>
+                    </div>
+                    <a href="/tools/resume-builder" class="project-link">View project →</a>
+                </div>
+
+                <!-- Project 3: Job Application Tracker -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>Job Application Tracker</h3>
+                        <span class="project-tag">Automation</span>
+                    </div>
+                    <p class="project-meta">Gmail API · NLP · Integration</p>
+                    <p class="project-desc">Email-parsing automation that monitors your inbox, extracts application data, deduplicates records, and tracks status changes without manual entry.</p>
+                    <div class="tags-row">
+                        <span class="tag-pill">Gmail API</span>
+                        <span class="tag-pill">NLP</span>
+                        <span class="tag-pill">Automation</span>
+                    </div>
+                    <a href="/tools/resume-builder.html" class="project-link">View project →</a>
+                </div>
+
+                <!-- Project 4: Resume Builder -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>Resume Builder</h3>
+                        <span class="project-tag">AI-powered</span>
+                    </div>
+                    <p class="project-meta">AI Generation · PDF Export</p>
+                    <p class="project-desc">AI-assisted resume builder that generates tailored, role-specific resumes from a master profile — formatting, optimizing, and exporting polished documents.</p>
+                    <div class="tags-row">
+                        <span class="tag-pill">AI</span>
+                        <span class="tag-pill">PDF</span>
+                        <span class="tag-pill">Optimization</span>
+                    </div>
+                    <a href="/tools/resume-builder.html" class="project-link">View project →</a>
+                </div>
+
+                <!-- Project 5: Community & Outreach Design -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>Community & Outreach Design</h3>
+                        <span class="project-tag community">Community</span>
+                    </div>
+                    <p class="project-meta">Graphic Design · Branding · Outreach</p>
+                    <p class="project-desc">Graphic design and web work for local organizations. Includes branding and fundraiser design for the St. James Men of Charity, and a community site for Knights of Columbus Council 2393 to support council initiatives and charitable outreach.</p>
+                    <div class="tags-row">
+                        <span class="tag-pill">Design</span>
+                        <span class="tag-pill">Community</span>
+                        <span class="tag-pill">Branding</span>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
+                        <a href="https://sjmoc.org" target="_blank" rel="noopener" class="project-link">Visit sjmoc.org →</a>
+                        <span style="color: #334155; margin-top: 1.25rem;">|</span>
+                        <a href="https://kofc2393.org" target="_blank" rel="noopener" class="project-link">Visit kofc2393.org →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section id="contact" class="section-padding">
+        <div class="container">
+            <div class="contact-cta">
+                <h2>Ready to modernize how you work?</h2>
+                <p>Let's talk about what's slowing your business down and how to fix it.</p>
+                <a href="mailto:pmikalainis@gmail.com" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1rem;">
+                    Book a free discovery call
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 0.5rem;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Use Cases Page -->
+<div id="use-cases-page" class="page">
+    <section class="section-padding">
+        <div class="container">
+            <p class="section-tag">Use Cases</p>
+            <h2>Real problems, proven solutions</h2>
+            <div class="accent-bar"></div>
+
+            <div class="use-cases-grid">
+                <!-- Use Case 1 -->
+                <div class="use-case-card">
+                    <span class="project-tag">AI-powered</span>
+                    <h3 class="uc-title">Intelligent Workflow Engine</h3>
+                    <div class="uc-sections">
+                        <div class="uc-section">
+                            <h4>Problem</h4>
+                            <p>A growing operations team was drowning in inbound requests routed manually by a coordinator. Misrouting caused delays, duplicated work, and frustrated staff — with no visibility into volume or patterns.</p>
+                        </div>
+                        <div class="uc-section">
+                            <h4>Solution</h4>
+                            <p>Built an LLM-backed classification and routing engine that reads each inbound request, determines the correct team or automated handler, and dispatches it instantly. Integrated with existing email and ticketing infrastructure with no workflow disruption during rollout.</p>
+                        </div>
+                        <div class="uc-section">
+                            <h4>Outcome</h4>
+                            <p>60% reduction in average response time. Eliminated the manual routing role, freeing the coordinator for higher-value work. Leadership gained full visibility into request volume and patterns for the first time.</p>
+                        </div>
+                    </div>
+                    <div class="uc-meta">
+                        <strong>Tech:</strong> Claude API, Webhooks, Node.js
+                    </div>
+                </div>
+
+                <!-- Use Case 2 -->
+                <div class="use-case-card">
+                    <span class="project-tag">AI-powered</span>
+                    <h3 class="uc-title">SMB Operations Assistant</h3>
+                    <div class="uc-sections">
+                        <div class="uc-section">
+                            <h4>Problem</h4>
+                            <p>A 25-person professional services firm had institutional knowledge scattered across Slack threads, Google Drive folders, and individual inboxes. New hires took months to get up to speed and senior staff spent hours a week answering repeat operational questions.</p>
+                        </div>
+                        <div class="uc-section">
+                            <h4>Solution</h4>
+                            <p>Deployed an AI agent connected to Slack and Google Workspace via RAG pipelines. The agent answers operational questions, summarizes reports on demand, and drafts routine communications — drawing from the firm's own documents and conversation history as its knowledge base.</p>
+                        </div>
+                        <div class="uc-section">
+                            <h4>Outcome</h4>
+                            <p>Senior staff reclaimed an estimated 4–6 hours per week. New hire ramp time dropped significantly. The firm's collective knowledge became instantly searchable and actionable without any change to existing tools.</p>
+                        </div>
+                    </div>
+                    <div class="uc-meta">
+                        <strong>Tech:</strong> RAG, Slack API, Google Drive, Claude API
+                    </div>
+                </div>
+
+                <!-- Use Case 3 -->
+                <div class="use-case-card">
+                    <span class="project-tag">Legacy modernization</span>
+                    <h3 class="uc-title">Oracle EPM Modernization</h3>
+                    <div class="uc-sections">
+                        <div class="uc-section">
+                            <h4>Problem</h4>
+                            <p>A finance team was running monthly close on a decade-old Oracle EPM reporting stack held together with manual exports, Excel transforms, and undocumented tribal knowledge. Every close cycle carried risk and consumed days of analyst time.</p>
+                        </div>
+                        <div class="uc-section">
+                            <h4>Solution</h4>
+                            <p>Conducted a full audit of the existing stack and redesigned the architecture with incremental ETL pipelines and a modern BI layer on top. Migration was staged to avoid disrupting live finance operations, with parallel running during the transition period.</p>
+                        </div>
+                        <div class="uc-section">
+                            <h4>Outcome</h4>
+                            <p>Monthly close cycle shortened by 3 days. Report generation moved from hours to minutes. Tribal knowledge was documented and encoded into automated processes, eliminating single points of failure.</p>
+                        </div>
+                    </div>
+                    <div class="uc-meta">
+                        <strong>Tech:</strong> Oracle EPM, ETL, Power BI, SQL
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA -->
+            <div class="contact-cta" style="margin-top: 6rem;">
+                <h2>See yourself in one of these scenarios?</h2>
+                <p>Let's talk through your situation and map out what's possible.</p>
+                <a href="#" onclick="showPage('home-page', 'contact'); return false;" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1rem;">
+                    Book a free discovery call
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 0.5rem;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+</div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <p style="color: #F8FAFC; font-weight: 600; margin-bottom: 0.25rem;">Paulius Mikalainis</p>
+                    <p>Basking Ridge, NJ</p>
+                </div>
+                <div class="footer-tagline">
+                    AI · Automation · Modernization
+                </div>
+                <div>
+                    &copy; 2026 Paulius Mikalainis. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 30) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // Stepper logic
+        function showPhase(index) {
+            const tabs = document.querySelectorAll('.step-tab');
+            const panels = document.querySelectorAll('.phase-panel');
+            
+            tabs.forEach((tab, i) => {
+                if (i === index) tab.classList.add('active');
+                else tab.classList.remove('active');
+            });
+            
+            panels.forEach((panel, i) => {
+                if (i === index) panel.classList.add('active');
+                else panel.classList.remove('active');
+            });
+            
+            // Optional: scroll slightly to keep tab row in view on mobile
+            if (window.innerWidth < 768) {
+                document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Page Navigation
+        function showPage(pageId, sectionId) {
+            const pages = document.querySelectorAll('.page');
+            const navLinks = document.querySelectorAll('.nav-links a');
+            
+            pages.forEach(page => {
+                if (page.id === pageId) page.classList.add('active');
+                else page.classList.remove('active');
+            });
+            
+            // Update active state in nav
+            navLinks.forEach(link => {
+                const onClickAttr = link.getAttribute('onclick') || '';
+                if (onClickAttr.includes(pageId)) {
+                    link.setAttribute('aria-current', 'page');
+                } else {
+                    link.removeAttribute('aria-current');
+                }
+            });
+            
+            // Handle scrolling if section provided
+            if (sectionId) {
+                const el = document.getElementById(sectionId);
+                if (el) {
+                    // Slight delay to ensure display:block has taken effect
+                    setTimeout(() => {
+                        el.scrollIntoView({ behavior: 'smooth' });
+                    }, 50);
+                }
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+    </script>
+</body>
+</html>
