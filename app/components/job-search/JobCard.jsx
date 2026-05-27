@@ -166,7 +166,7 @@ export default function JobCard({ job, onSave }) {
             {salary}
           </span>
 
-          {/* Distance from Basking Ridge */}
+          {/* Distance from origin */}
           {job.workModel !== 'Remote' && job.distanceMiles !== null && job.distanceMiles !== undefined && (
             <span className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs">
               <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

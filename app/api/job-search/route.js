@@ -18,7 +18,7 @@ const GENERIC_PATTERNS = [
 
 export async function POST(request) {
   try {
-    const { query, proximity, apiKey, model = 'gemini-2.5-flash' } = await request.json();
+    const { query, proximity, apiKey, model = 'gemini-2.5-flash', zipCode = '07920' } = await request.json();
 
     if (!query || typeof query !== 'string') {
       return Response.json({ message: 'Missing or invalid query' }, { status: 400 });
@@ -35,12 +35,13 @@ export async function POST(request) {
       : query;
 
     const proximityNote = proximity && proximity !== 'Any'
-      ? `\nProximity filter: only include On-site and Hybrid roles within ${proximity} miles of Basking Ridge, NJ 07920. Remote roles are always fine regardless of distance.`
+      ? `\nProximity filter: only include On-site and Hybrid roles within ${proximity} miles of zip code ${zipCode}. Remote roles are always fine regardless of distance.`
       : '';
 
     const userMessage = `
 User query: "${normalizedQuery}"
 ${proximityNote}
+Base location for distance calculation: Zip code ${zipCode}.
 Please search for real, currently open job postings that match my profile.
 Search multiple times with different queries to find the best 4–8 matches.
 Return ONLY a valid JSON array of job objects — no markdown, no commentary.

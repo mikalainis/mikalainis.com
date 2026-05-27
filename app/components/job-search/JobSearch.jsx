@@ -13,6 +13,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import FilterBar from './FilterBar';
 import JobCard from './JobCard';
+import { searchJobs } from '@/lib/claudeApi';
 
 // Adzuna API Credentials
 const ADZUNA_APP_ID = process.env.NEXT_PUBLIC_ADZUNA_APP_ID || "b1df80f6";
@@ -60,6 +61,7 @@ export default function JobSearch() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isCached, setIsCached] = useState(false);
   const [requestCount, setRequestCount] = useState(0);
+  const [isAiSearch, setIsAiSearch] = useState(false);
 
   useEffect(() => {
     setRequestCount(getRequestCount());
@@ -167,15 +169,42 @@ export default function JobSearch() {
   }, [filters]);
 
   // Handle search submission
-  const handleSearch = useCallback(async (what, where = '') => {
+  const handleSearch = useCallback(async (what, where = '', forceAdzuna = false) => {
     setIsLoading(true);
     setSearchError(null);
     setHasSearched(true);
     setPage(1);
     setCurrentQuery({ what, where });
 
+    const apiKey = localStorage.getItem('gemini_api_key');
+    
+    // Use AI Search if key is present and not forced to Adzuna
+    if (apiKey && !forceAdzuna) {
+      setIsAiSearch(true);
+      try {
+        const fullQuery = where ? `${what} in ${where}` : what;
+        const jobs = await searchJobs(fullQuery, { proximity: filters.proximity });
+        setAllJobs(jobs || []);
+        setTotalResults(jobs?.length || 0);
+        setIsCached(false);
+        setLastUpdated(Date.now());
+      } catch (err) {
+        console.error('AI Search failed, falling back to Adzuna:', err);
+        // Fallback to Adzuna
+        const { jobs, count } = await fetchAdzunaJobs(what, where, 1);
+        setAllJobs(jobs);
+        setTotalResults(count);
+        setIsAiSearch(false);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Default to Adzuna Search
+    setIsAiSearch(false);
     try {
-      const { jobs, count } = await fetchAdzunaJobs(what, where, 1);
+      const { jobs, count } = await fetchAdzunaJobs(what, where, 1, forceAdzuna === true);
       if (jobs.length === 0) {
         setSearchError(`No jobs found for "${what}" ${where ? `in "${where}"` : ''}. Try broader keywords or a different location.`);
       }
@@ -187,10 +216,10 @@ export default function JobSearch() {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchAdzunaJobs]);
+  }, [fetchAdzunaJobs, filters.proximity]);
 
   const handleLoadMore = async () => {
-    if (isLoading) return;
+    if (isLoading || isAiSearch) return;
     const nextPage = page + 1;
     setIsLoading(true);
     

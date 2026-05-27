@@ -24,6 +24,9 @@
         .dragging { opacity:.5; transform:scale(.95); }
         .page-break-before { border-top:2px dashed #3b82f6 !important; margin-top:2.5rem !important; padding-top:1.5rem !important; position:relative; }
         .page-break-before::before { content:"Page Break (Print)"; position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:#3b82f6; color:#fff; font-size:.75rem; padding:.125rem .75rem; border-radius:9999px; font-weight:600; z-index:20; pointer-events:none; }
+        .standalone-page-break { height: 2rem; border-top: none !important; padding-top: 0 !important; }
+        .standalone-page-break::after { content: ""; position: absolute; top: 50%; left: 0; right: 0; border-top: 2px dashed #3b82f6; }
+        .standalone-page-break::before { top: 50%; transform: translate(-50%, -50%); }
         .skill-tag { transition:all .2s; }
         .skill-tag:hover { transform:translateY(-2px); box-shadow:0 4px 6px -1px rgba(0,0,0,.1); }
         .timeline-dot { position:absolute; left:-33px; top:6px; width:14px; height:14px; border-radius:50%; background:#4f46e5; border:3px solid #fff; box-shadow:0 0 0 1px #e5e7eb; }
@@ -332,6 +335,14 @@
             <button type="button" onclick="addCustomSection()" class="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer mt-2">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 <span>Add Section</span>
+            </button>
+            <button type="button" onclick="addStandalonePageBreak()" class="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
+                <span>Add Page Break</span>
+            </button>
+            <button type="button" onclick="clearAllPageBreaks()" class="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <span>Clear All Breaks</span>
             </button>
             <button type="button" id="undo-btn" onclick="undo()" class="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 opacity-50 cursor-not-allowed" disabled>
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
@@ -2325,21 +2336,70 @@ function undo() {
 document.addEventListener('focusin', e => { if (e.target?.isContentEditable) saveState(); });
 
 function removeElement(el) { try { saveState(); if(el) { el.remove(); checkPendingSuggestions(); } } catch(e) {} }
-function togglePageBreak(el) { try { saveState(); if(el) el.classList.toggle('page-break-before'); } catch(e) {} }
+
+function togglePageBreak(el) { 
+    try { 
+        saveState(); 
+        if(el) {
+            el.classList.toggle('page-break-before'); 
+            // Also ensure it's visible in edit mode if it's a standalone break
+            if (el.classList.contains('standalone-page-break')) {
+                el.classList.toggle('opacity-50');
+            }
+        }
+    } catch(e) {} 
+}
+
+function addStandalonePageBreak() {
+    try {
+        saveState();
+        const active = document.querySelector('main:not(.hidden)');
+        if(!active || active.id==='tracker-view') return;
+        const el = document.createElement('div');
+        el.className = 'page-break-before standalone-page-break my-8 border-t-2 border-dashed border-blue-300 relative group no-print flex items-center justify-center';
+        el.innerHTML = `
+            <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded absolute -top-2.5 uppercase tracking-wider">Page Break</span>
+            <div class="absolute -top-3 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                <button type="button" onclick="moveSectionUp(this.closest('.standalone-page-break'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑</button>
+                <button type="button" onclick="moveSectionDown(this.closest('.standalone-page-break'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓</button>
+                <button type="button" onclick="removeElement(this.closest('.standalone-page-break'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button>
+            </div>
+        `;
+        active.appendChild(el);
+        showToast('Page break added!');
+    } catch(e) {}
+}
+
+function clearAllPageBreaks() {
+    try {
+        saveState();
+        const breaks = document.querySelectorAll('.page-break-before');
+        breaks.forEach(el => {
+            if (el.classList.contains('standalone-page-break')) {
+                el.remove();
+            } else {
+                el.classList.remove('page-break-before');
+            }
+        });
+        showToast('All page breaks cleared.');
+    } catch(e) {}
+}
 
 function moveSectionUp(section) {
     try {
         saveState();
-        if (section?.previousElementSibling?.tagName?.toLowerCase() === 'section')
-            section.parentNode.insertBefore(section, section.previousElementSibling);
+        const prev = section.previousElementSibling;
+        if (prev && (prev.tagName.toLowerCase() === 'section' || prev.classList.contains('standalone-page-break')))
+            section.parentNode.insertBefore(section, prev);
     } catch(e) {}
 }
 
 function moveSectionDown(section) {
     try {
         saveState();
-        if (section?.nextElementSibling?.tagName?.toLowerCase() === 'section')
-            section.parentNode.insertBefore(section.nextElementSibling, section);
+        const next = section.nextElementSibling;
+        if (next && (next.tagName.toLowerCase() === 'section' || next.classList.contains('standalone-page-break')))
+            section.parentNode.insertBefore(next, section);
     } catch(e) {}
 }
 

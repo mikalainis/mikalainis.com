@@ -12,6 +12,7 @@ const MODELS = [
 export default function ApiKeySettings() {
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('gemini-2.5-flash');
+  const [zipCode, setZipCode] = useState('07920');
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
   const [open, setOpen] = useState(false);
@@ -19,8 +20,10 @@ export default function ApiKeySettings() {
   useEffect(() => {
     const storedKey = localStorage.getItem('gemini_api_key') || '';
     const storedModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
+    const storedZip = localStorage.getItem('user_zip_code') || '07920';
     setApiKey(storedKey);
     setModel(storedModel);
+    setZipCode(storedZip);
     // Auto-open if no key is set
     if (!storedKey) setOpen(true);
   }, []);
@@ -28,6 +31,7 @@ export default function ApiKeySettings() {
   const handleSave = () => {
     localStorage.setItem('gemini_api_key', apiKey.trim());
     localStorage.setItem('gemini_model', model);
+    localStorage.setItem('user_zip_code', zipCode.trim());
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     if (apiKey.trim()) setOpen(false);
@@ -52,7 +56,7 @@ export default function ApiKeySettings() {
             {hasKey ? (
               <span className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                Key saved · {model}
+                Key saved · {model} · {zipCode}
               </span>
             ) : (
               <span className="text-xs text-amber-500 font-medium">API key required</span>
@@ -69,9 +73,9 @@ export default function ApiKeySettings() {
         {/* Expanded panel */}
         {open && (
           <div className="px-5 pb-5 pt-1 border-t border-slate-100 dark:border-slate-700">
-            <div className="flex flex-col sm:flex-row gap-4 mt-3">
+            <div className="flex flex-col md:flex-row gap-4 mt-3">
               {/* API Key input */}
-              <div className="flex-1">
+              <div className="flex-[2]">
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
                   Gemini API Key
                 </label>
@@ -125,8 +129,30 @@ export default function ApiKeySettings() {
                 </p>
               </div>
 
+              {/* Zip Code input */}
+              <div className="md:w-32">
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+                  Home Zip Code
+                </label>
+                <input
+                  type="text"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                  placeholder="07920"
+                  className="
+                    w-full px-3 py-2 text-sm
+                    bg-slate-50 dark:bg-slate-900
+                    border border-slate-200 dark:border-slate-600
+                    text-slate-900 dark:text-slate-100
+                    rounded-lg
+                    focus:outline-none focus:ring-2 focus:ring-blue-500
+                  "
+                />
+              </div>
+
               {/* Model selector */}
-              <div className="sm:w-64">
+              <div className="md:w-56">
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
                   Model
                 </label>
