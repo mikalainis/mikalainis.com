@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7WRR3BEPZ3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-7WRR3BEPZ3');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mikalogix | AI & Automation Consulting</title>
@@ -777,7 +785,7 @@
                     <a href="#" id="nav-use-cases" onclick="showPage('use-cases-page'); return false;">Use Cases</a>
                     <a href="#" onclick="showPage('home-page', 'projects'); return false;">Projects</a>
                     <a href="/resume.html">Résumé</a>
-                    <a href="#" onclick="showPage('home-page', 'contact'); return false;" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Get In Touch</a>
+                    <a href="#" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'nav_get_in_touch' }); showPage('home-page', 'contact'); return false;" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Get In Touch</a>
                 </div>
             </div>
         </div>
@@ -800,11 +808,11 @@
                 <h1>Building smarter systems for<br><span class="text-accent">modern businesses</span></h1>
                 <p class="hero-subtext">AI agent development, digital workflow automation, and legacy system redesign for small to mid-size businesses.</p>
                 <div class="hero-ctas">
-                    <a href="#" onclick="showPage('home-page', 'contact'); return false;" class="btn btn-primary">
+                    <a href="#" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'start_conversation' }); showPage('home-page', 'contact'); return false;" class="btn btn-primary">
                         Start a conversation
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     </a>
-                    <a href="#" onclick="showPage('home-page', 'projects'); return false;" class="btn btn-ghost">View projects</a>
+                    <a href="#" onclick="gtag('event', 'navigation_click', { event_category: 'Navigation', event_label: 'view_projects' }); showPage('home-page', 'projects'); return false;" class="btn btn-ghost">View projects</a>
                 </div>
             </div>
         </section>
@@ -939,7 +947,7 @@
                         </div>
                         <div style="display: flex; gap: 0.75rem;">
                             <button class="btn btn-ghost" disabled style="opacity: 0.5; cursor: not-allowed;">Prev</button>
-                            <button class="btn btn-primary" onclick="showPhase(1)">Next</button>
+                            <button class="btn btn-primary" onclick="gtag('event', 'stepper_next', { event_category: 'Engagement', event_label: 'phase_1' }); showPhase(1)">Next</button>
                         </div>
                     </div>
                 </div>
@@ -980,7 +988,7 @@
                         </div>
                         <div style="display: flex; gap: 0.75rem;">
                             <button class="btn btn-ghost" onclick="showPhase(0)">Prev</button>
-                            <button class="btn btn-primary" onclick="showPhase(2)">Next</button>
+                            <button class="btn btn-primary" onclick="gtag('event', 'stepper_next', { event_category: 'Engagement', event_label: 'phase_2' }); showPhase(2)">Next</button>
                         </div>
                     </div>
                 </div>
@@ -1021,7 +1029,7 @@
                         </div>
                         <div style="display: flex; gap: 0.75rem;">
                             <button class="btn btn-ghost" onclick="showPhase(1)">Prev</button>
-                            <button class="btn btn-primary" onclick="showPhase(3)">Next</button>
+                            <button class="btn btn-primary" onclick="gtag('event', 'stepper_next', { event_category: 'Engagement', event_label: 'phase_3' }); showPhase(3)">Next</button>
                         </div>
                     </div>
                 </div>
@@ -1062,7 +1070,7 @@
                         </div>
                         <div style="display: flex; gap: 0.75rem;">
                             <button class="btn btn-ghost" onclick="showPhase(2)">Prev</button>
-                            <button class="btn btn-primary" onclick="showPhase(4)">Next</button>
+                            <button class="btn btn-primary" onclick="gtag('event', 'stepper_next', { event_category: 'Engagement', event_label: 'phase_4' }); showPhase(4)">Next</button>
                         </div>
                     </div>
                 </div>
@@ -1103,7 +1111,7 @@
                         </div>
                         <div style="display: flex; gap: 0.75rem;">
                             <button class="btn btn-ghost" onclick="showPhase(3)">Prev</button>
-                            <a href="#contact" class="btn btn-primary">Book a free discovery call</a>
+                            <a href="#contact" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'book_discovery_call' });" class="btn btn-primary">Book a free discovery call</a>
                         </div>
                     </div>
                 </div>
@@ -1133,9 +1141,9 @@
                         <span class="tag-pill">Design</span>
                     </div>
                     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
-                        <a href="https://y-swim.com" target="_blank" rel="noopener" class="project-link">Visit y-swim.com →</a>
+                        <a href="https://y-swim.com" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Web Design & Development' });" target="_blank" rel="noopener" class="project-link">Visit y-swim.com →</a>
                         <span style="color: #334155; margin-top: 1.25rem;">|</span>
-                        <a href="https://mikalainis.com" target="_blank" rel="noopener" class="project-link">Visit mikalainis.com →</a>
+                        <a href="https://mikalainis.com" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Web Design & Development' });" target="_blank" rel="noopener" class="project-link">Visit mikalainis.com →</a>
                     </div>
                 </div>
 
@@ -1152,7 +1160,7 @@
                         <span class="tag-pill">Search Tool</span>
                         <span class="tag-pill">UX</span>
                     </div>
-                    <a href="/tools/resume-builder" class="project-link">View project →</a>
+                    <a href="/tools/resume-builder" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'AI Job Search Assistant' });" class="project-link">View project →</a>
                 </div>
 
                 <!-- Project 3: Job Application Tracker -->
@@ -1168,7 +1176,7 @@
                         <span class="tag-pill">NLP</span>
                         <span class="tag-pill">Automation</span>
                     </div>
-                    <a href="/tools/resume-builder.html" class="project-link">View project →</a>
+                    <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Job Application Tracker' });" class="project-link">View project →</a>
                 </div>
 
                 <!-- Project 4: Resume Builder -->
@@ -1184,7 +1192,7 @@
                         <span class="tag-pill">PDF</span>
                         <span class="tag-pill">Optimization</span>
                     </div>
-                    <a href="/tools/resume-builder.html" class="project-link">View project →</a>
+                    <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Resume Builder' });" class="project-link">View project →</a>
                 </div>
 
                 <!-- Project 5: Community & Outreach Design -->
@@ -1201,9 +1209,9 @@
                         <span class="tag-pill">Branding</span>
                     </div>
                     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
-                        <a href="https://sjmoc.org" target="_blank" rel="noopener" class="project-link">Visit sjmoc.org →</a>
+                        <a href="https://sjmoc.org" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Community & Outreach Design' });" target="_blank" rel="noopener" class="project-link">Visit sjmoc.org →</a>
                         <span style="color: #334155; margin-top: 1.25rem;">|</span>
-                        <a href="https://kofc2393.org" target="_blank" rel="noopener" class="project-link">Visit kofc2393.org →</a>
+                        <a href="https://kofc2393.org" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Community & Outreach Design' });" target="_blank" rel="noopener" class="project-link">Visit kofc2393.org →</a>
                     </div>
                 </div>
             </div>
@@ -1216,7 +1224,7 @@
             <div class="contact-cta">
                 <h2>Ready to modernize how you work?</h2>
                 <p>Let's talk about what's slowing your business down and how to fix it.</p>
-                <a href="mailto:pmikalainis@gmail.com" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1rem;">
+                <a href="mailto:pmikalainis@gmail.com" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'book_discovery_call' });" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1rem;">
                     Book a free discovery call
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 0.5rem;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 </a>
@@ -1308,10 +1316,64 @@
             <div class="contact-cta" style="margin-top: 6rem;">
                 <h2>See yourself in one of these scenarios?</h2>
                 <p>Let's talk through your situation and map out what's possible.</p>
-                <a href="#" onclick="showPage('home-page', 'contact'); return false;" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1rem;">
+                <a href="#" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'book_discovery_call' }); showPage('home-page', 'contact'); return false;" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1rem;">
                     Book a free discovery call
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 0.5rem;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 </a>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Privacy Policy Page -->
+<div id="privacy-page" class="page">
+    <section class="section-padding">
+        <div class="container">
+            <p class="section-tag">Privacy</p>
+            <h2>Privacy Policy</h2>
+            <div class="accent-bar"></div>
+            
+            <div class="use-case-card" style="max-width: 800px; margin: 0 auto; background-color: var(--surface); border: 1px solid var(--border); padding: 3rem; border-radius: 1.5rem;">
+                <p class="text-secondary" style="margin-bottom: 2rem;">Last updated: May 27, 2026</p>
+                
+                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                    <h4>Introduction</h4>
+                    <p>Mikalogix LLC ("we", "us", or "our") operates mikalainis.com. This page explains how we collect and use information when you visit our site.</p>
+                </div>
+
+                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                    <h4>Information We Collect</h4>
+                    <p>We use Google Analytics 4 to collect anonymized data about how visitors interact with our site. This includes pages visited, time spent on each page, general geographic location, device type, and traffic source. We do not collect your name, email, or any personally identifiable information unless you contact us directly.</p>
+                </div>
+
+                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                    <h4>How We Use This Information</h4>
+                    <p>Analytics data helps us understand which content is most useful to visitors so we can improve the site. We do not sell or share this data with third parties.</p>
+                </div>
+
+                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                    <h4>Cookies</h4>
+                    <p>Google Analytics uses cookies — small text files stored in your browser — to distinguish visitors and track sessions. You can disable cookies in your browser settings at any time.</p>
+                </div>
+
+                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                    <h4>Third-Party Services</h4>
+                    <p>We use Google Analytics, operated by Google LLC. You can review Google's privacy policy at policies.google.com/privacy.</p>
+                </div>
+
+                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                    <h4>Contact</h4>
+                    <p>If you have any questions about this privacy policy, contact us at <!-- INSERT CONTACT EMAIL -->.</p>
+                </div>
+
+                <div class="uc-section">
+                    <h4>Changes</h4>
+                    <p>We may update this policy occasionally. Changes will be posted on this page with an updated date.</p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="#" onclick="showPage('home-page'); return false;" class="btn btn-ghost">Back to Home</a>
             </div>
         </div>
     </section>
@@ -1328,12 +1390,28 @@
                 <div class="footer-tagline">
                     AI · Automation · Modernization
                 </div>
-                <div>
-                    &copy; 2026 Mikalogix. All rights reserved.
+                <div style="text-align: right;">
+                    <div style="margin-bottom: 0.5rem;">
+                        &copy; 2026 Mikalogix. All rights reserved.
+                    </div>
+                    <a href="#" onclick="showPage('privacy-page'); return false;" style="color: var(--text-secondary); text-decoration: none; font-size: 0.75rem; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Privacy Policy</a>
                 </div>
             </div>
         </div>
     </footer>
+
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-banner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background-color: #0F172A; border-top: 1px solid rgba(51, 65, 85, 0.7); padding: 1.25rem; z-index: 40; box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.3);">
+        <div class="container">
+            <div style="display: flex; flex-direction: row; gap: 2rem; align-items: center; justify-content: space-between;">
+                <p style="font-size: 0.875rem; color: #94A3B8; margin: 0; line-height: 1.5;">
+                    We use cookies to analyze site traffic via Google Analytics. By continuing to use this site you accept our use of cookies.
+                    <a href="#" onclick="showPage('privacy-page'); return false;" style="color: var(--accent); text-decoration: underline; margin-left: 0.5rem;">Privacy Policy</a>
+                </p>
+                <button id="accept-cookies" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.875rem; white-space: nowrap;">Accept</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Navbar scroll effect
@@ -1400,6 +1478,30 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
+
+        // Cookie banner logic
+        document.addEventListener('DOMContentLoaded', function() {
+            const banner = document.getElementById('cookie-banner');
+            const acceptBtn = document.getElementById('accept-cookies');
+            
+            if (!localStorage.getItem('cookies-accepted')) {
+                banner.style.display = 'block';
+            }
+            
+            acceptBtn.addEventListener('click', function() {
+                localStorage.setItem('cookies-accepted', 'true');
+                banner.style.display = 'none';
+                gtag('event', 'cookie_consent', { event_category: 'Compliance', event_label: 'accepted' });
+            });
+
+            // Adjust banner layout for mobile
+            if (window.innerWidth < 640) {
+                const inner = banner.querySelector('div > div');
+                inner.style.flexDirection = 'column';
+                inner.style.alignItems = 'flex-start';
+                inner.style.gap = '1rem';
+            }
+        });
     </script>
 </body>
 </html>
