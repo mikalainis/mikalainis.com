@@ -42,11 +42,12 @@ function getScoreBarColor(score) {
 }
 
 function formatSalary(min, max) {
-  if (!min && !max) return null;
+  if (!min && !max) return 'Salary not specified';
   const fmt = (n) => `$${(n / 1000).toFixed(0)}k`;
   if (min && max) return `${fmt(min)} – ${fmt(max)}`;
   if (min) return `From ${fmt(min)}`;
   if (max) return `Up to ${fmt(max)}`;
+  return 'Salary not specified';
 }
 
 function formatDate(dateStr) {
@@ -67,55 +68,74 @@ function formatDate(dateStr) {
 
 export default function JobCard({ job, onSave }) {
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const salary = formatSalary(job.salaryMin, job.salaryMax);
   const postedLabel = formatDate(job.postedDate);
+  
+  const isTracked = !!job.savedStatus;
+  const description = job.description || '';
+  const shouldTruncate = description.length > 200;
+  const displayDescription = isExpanded || !shouldTruncate 
+    ? description 
+    : description.slice(0, 200) + '...';
 
   return (
     <article
-      className="
+      className={`
         relative group
         bg-white dark:bg-slate-800
-        border border-slate-200 dark:border-slate-700
-        hover:border-blue-300 dark:hover:border-blue-600
-        rounded-xl shadow-sm hover:shadow-md
-        transition-all duration-200
-        overflow-hidden
-      "
+        border transition-all duration-200
+        ${isTracked 
+          ? 'border-blue-200 dark:border-blue-900/50 bg-blue-50/10 dark:bg-blue-900/5' 
+          : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 shadow-sm hover:shadow-md'}
+        rounded-xl overflow-hidden
+      `}
     >
       {/* Top accent line — color based on match score */}
       <div
-        className={`absolute top-0 left-0 right-0 h-0.5 ${getScoreBarColor(job.matchScore)}`}
+        className={`absolute top-0 left-0 right-0 h-0.5 ${getScoreBarColor(job.matchScore || 0)}`}
       />
 
       <div className="p-5">
         {/* Header row: Title + Company + Badges */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug truncate">
-              {job.title}
-            </h3>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug truncate">
+                {job.title}
+              </h3>
+              {isTracked && (
+                <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 rounded">
+                  Already Applied
+                </span>
+              )}
+            </div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
               {job.company}
             </p>
           </div>
 
-          {/* Match Score badge */}
-          <div className="flex-shrink-0 text-right">
-            <div className={`text-xl font-bold tabular-nums ${getScoreColor(job.matchScore)}`}>
-              {job.matchScore}%
+          {/* Match Score badge — only if score > 0 */}
+          {job.matchScore > 0 && (
+            <div className="flex-shrink-0 text-right">
+              <div className={`text-xl font-bold tabular-nums ${getScoreColor(job.matchScore)}`}>
+                {job.matchScore}%
+              </div>
+              <div className="text-xs text-slate-400 dark:text-slate-500">match</div>
             </div>
-            <div className="text-xs text-slate-400 dark:text-slate-500">match</div>
-          </div>
+          )}
         </div>
 
-        {/* Match score bar */}
-        <div className="w-full h-1 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${getScoreBarColor(job.matchScore)}`}
-            style={{ width: `${job.matchScore}%` }}
-          />
-        </div>
+        {/* Match score bar — only if score > 0 */}
+        {job.matchScore > 0 && (
+          <div className="w-full h-1 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${getScoreBarColor(job.matchScore)}`}
+              style={{ width: `${job.matchScore}%` }}
+            />
+          </div>
+        )}
 
         {/* Meta row: Location + Work Model + Salary + Date */}
         <div className="flex flex-wrap items-center gap-2 mb-3 text-sm">
@@ -138,15 +158,13 @@ export default function JobCard({ job, onSave }) {
           </span>
 
           {/* Salary */}
-          {salary && (
-            <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {salary}
-            </span>
-          )}
+          <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {salary}
+          </span>
 
           {/* Distance from Basking Ridge */}
           {job.workModel !== 'Remote' && job.distanceMiles !== null && job.distanceMiles !== undefined && (
@@ -168,10 +186,20 @@ export default function JobCard({ job, onSave }) {
         </div>
 
         {/* Description */}
-        {job.description && (
-          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3 line-clamp-2">
-            {job.description}
-          </p>
+        {description && (
+          <div className="mb-3">
+            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              {displayDescription}
+            </p>
+            {shouldTruncate && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 mt-1"
+              >
+                {isExpanded ? 'Show less' : 'Read more'}
+              </button>
+            )}
+          </div>
         )}
 
         {/* Matched skills tags */}
@@ -238,7 +266,7 @@ export default function JobCard({ job, onSave }) {
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
-                Save
+                Track this job
               </button>
             )}
 
@@ -292,7 +320,7 @@ export default function JobCard({ job, onSave }) {
               transition-all duration-150
             "
           >
-            Apply
+            Apply now
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
