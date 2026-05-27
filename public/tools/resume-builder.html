@@ -1588,7 +1588,14 @@ async function startEmailScan() {
             { headers: { Authorization: `Bearer ${googleAccessToken}` } }
         );
         const gmailListData = await gmailListResp.json();
-        if (!gmailListResp.ok) throw new Error(gmailListData.error?.message || `HTTP ${gmailListResp.status}`);
+        if (!gmailListResp.ok) {
+            if (gmailListResp.status === 401) {
+                clearGoogleSession();
+                setGoogleConnected(false);
+                throw new Error("Google session expired or invalid. Please sign in again.");
+            }
+            throw new Error(gmailListData.error?.message || `HTTP ${gmailListResp.status}`);
+        }
         const messages = gmailListData.messages || [];
         scanLog(`Found ${messages.length} emails to analyze.`, 'text-cyan-300');
 
