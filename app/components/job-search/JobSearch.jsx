@@ -9,148 +9,246 @@
  * Drop this into any page: <JobSearch />
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import FilterBar from './FilterBar';
 import JobCard from './JobCard';
-import { searchJobs } from '@/lib/claudeApi';
+
+// Adzuna API Credentials
+const ADZUNA_APP_ID = process.env.NEXT_PUBLIC_ADZUNA_APP_ID || "b1df80f6";
+const ADZUNA_APP_KEY = process.env.NEXT_PUBLIC_ADZUNA_APP_KEY || "07ea9cfa7e534bf270bf22af538c5142";
+const CACHE_EXPIRY_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 // Default filter state
 const DEFAULT_FILTERS = {
   workModel: 'All',
   roleType: 'All',
-  minMatchScore: 70,
-  sortBy: 'matchScore',
-  proximity: 'Any',
+  minMatchScore: 0,
+  sortBy: 'relevance',
+  proximity: '25',
+  salaryMin: '',
+  salaryMax: '',
+  fullTime: false,
+  permanent: false,
+  // Precision filters
+  experienceLevels: [],
+  jobTypes: [],
+  industries: [],
+  maxDaysOld: 'all',
+  companySize: 'Any',
 };
 
-// Loading skeleton for job cards
-function JobCardSkeleton() {
-  return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5 animate-pulse">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-2" />
-          <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
-        </div>
-        <div className="h-8 w-14 bg-slate-200 dark:bg-slate-700 rounded" />
-      </div>
-      <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full mb-4" />
-      <div className="flex gap-2 mb-3">
-        <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-24" />
-        <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-16" />
-        <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-20" />
-      </div>
-      <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full mb-2" />
-      <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-4/5 mb-4" />
-      <div className="flex gap-2">
-        <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-16" />
-        <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-24" />
-        <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-14 ml-auto" />
-      </div>
-    </div>
-  );
-}
-
-// Empty state component
-function EmptyState({ hasSearched, error }) {
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-          <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Search failed</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!hasSearched) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-          <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-base font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Ready to search
-          </p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-            Type a query above or pick a quick search to find jobs matching your profile
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
-        <svg className="w-8 h-8 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      <div>
-        <p className="text-base font-medium text-slate-700 dark:text-slate-300 mb-1">No matching roles</p>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Try adjusting your filters or searching with different keywords
-        </p>
-      </div>
-    </div>
-  );
-}
+const getStoredFilters = () => {
+  const stored = localStorage.getItem('adzuna_filters');
+  return stored ? { ...DEFAULT_FILTERS, ...JSON.parse(stored) } : DEFAULT_FILTERS;
+};
 
 export default function JobSearch() {
   // All jobs returned from the last search (un-filtered)
   const [allJobs, setAllJobs] = useState([]);
   // Active filter state
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState(getStoredFilters());
   // Search state
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState(null);
+  
+  // Adzuna specific state
+  const [page, setPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [currentQuery, setCurrentQuery] = useState({ what: '', where: '' });
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [isCached, setIsCached] = useState(false);
+  const [requestCount, setRequestCount] = useState(0);
+
+  useEffect(() => {
+    setRequestCount(getRequestCount());
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('adzuna_filters', JSON.stringify(filters));
+  }, [filters]);
+
+  const fetchAdzunaJobs = useCallback(async (what, where, pageNum, forceRefresh = false) => {
+    const cacheKey = `adzuna_${what}_${where}_${pageNum}_${JSON.stringify(filters)}`;
+    
+    if (!forceRefresh) {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_EXPIRY_MS) {
+          setIsCached(true);
+          setLastUpdated(timestamp);
+          return data;
+        }
+      }
+    }
+
+    const count = incrementRequestCount();
+    setRequestCount(count);
+
+    const url = new URL(`https://api.adzuna.com/v1/api/jobs/us/search/${pageNum}`);
+    url.searchParams.set('app_id', ADZUNA_APP_ID);
+    url.searchParams.set('app_key', ADZUNA_APP_KEY);
+    url.searchParams.set('results_per_page', '20');
+    
+    // Refine 'what' with precision filters
+    let refinedWhat = what;
+    if (filters.experienceLevels.length > 0) {
+      refinedWhat += ` (${filters.experienceLevels.join(' OR ')})`;
+    }
+    if (filters.industries.length > 0 && !filters.industries.includes('Any')) {
+      refinedWhat += ` (${filters.industries.join(' OR ')})`;
+    }
+    if (filters.companySize === 'Startup') refinedWhat += ' "startup"';
+    if (filters.companySize === 'SMB') refinedWhat += ' ("small business" OR "mid-size")';
+    if (filters.companySize === 'Enterprise') refinedWhat += ' ("enterprise" OR "corporation")';
+
+    url.searchParams.set('what', refinedWhat);
+    if (where) url.searchParams.set('where', where);
+    url.searchParams.set('content-type', 'application/json');
+    
+    // Optional filters from state
+    if (filters.salaryMin) url.searchParams.set('salary_min', filters.salaryMin);
+    if (filters.salaryMax) url.searchParams.set('salary_max', filters.salaryMax);
+    
+    // Job Types mapping
+    if (filters.jobTypes.includes('Full-time') || filters.fullTime) url.searchParams.set('full_time', '1');
+    if (filters.jobTypes.includes('Part-time')) url.searchParams.set('part_time', '1');
+    if (filters.jobTypes.includes('Contract') || filters.jobTypes.includes('Freelance')) url.searchParams.set('contract', '1');
+    if (filters.permanent) url.searchParams.set('permanent', '1'); // Permanent mapping
+
+    if (filters.maxDaysOld !== 'all') {
+      url.searchParams.set('max_days_old', filters.maxDaysOld);
+    }
+
+    url.searchParams.set('sort_by', filters.sortBy === 'recent' ? 'date' : 'relevance');
+    url.searchParams.set('distance', filters.proximity === 'Any' ? '25' : filters.proximity);
+
+    try {
+      const resp = await fetch(url.toString());
+      if (!resp.ok) throw new Error('Job search temporarily unavailable. Please try again in a few minutes.');
+      
+      const data = await resp.json();
+      
+      // Map Adzuna fields to existing Job structure
+      const mappedJobs = (data.results || []).map(j => ({
+        id: j.id,
+        title: j.title,
+        company: j.company.display_name,
+        location: j.location.display_name,
+        salaryMin: j.salary_min || null,
+        salaryMax: j.salary_max || null,
+        matchScore: 0, // We could calculate this if we had the profile here
+        matchedSkills: [],
+        description: j.description,
+        applyUrl: j.redirect_url,
+        postedDate: j.created,
+        workModel: j.description.toLowerCase().includes('remote') ? 'Remote' : 
+                   j.description.toLowerCase().includes('hybrid') ? 'Hybrid' : 'On-site',
+        jobSource: j.source?.display_name || 'Adzuna',
+        distanceMiles: null, // Adzuna doesn't easily provide distance in miles from a fixed point in results
+      }));
+
+      const result = { jobs: mappedJobs, count: data.count };
+      
+      localStorage.setItem(cacheKey, JSON.stringify({
+        data: result,
+        timestamp: Date.now()
+      }));
+
+      setIsCached(false);
+      setLastUpdated(Date.now());
+      return result;
+    } catch (err) {
+      if (err.message.includes('fetch')) throw new Error('Unable to reach job search service. Check your connection.');
+      throw err;
+    }
+  }, [filters]);
 
   // Handle search submission
-  const handleSearch = useCallback(async (query) => {
+  const handleSearch = useCallback(async (what, where = '') => {
     setIsLoading(true);
     setSearchError(null);
     setHasSearched(true);
+    setPage(1);
+    setCurrentQuery({ what, where });
 
     try {
-      const jobs = await searchJobs(query, { proximity: filters.proximity });
+      const { jobs, count } = await fetchAdzunaJobs(what, where, 1);
+      if (jobs.length === 0) {
+        setSearchError(`No jobs found for "${what}" ${where ? `in "${where}"` : ''}. Try broader keywords or a different location.`);
+      }
       setAllJobs(jobs);
-      // Reset filters to defaults on new search
-      setFilters(DEFAULT_FILTERS);
+      setTotalResults(count);
     } catch (err) {
-      setSearchError(err.message || 'Search failed. Please try again.');
+      setSearchError(err.message);
       setAllJobs([]);
     } finally {
       setIsLoading(false);
     }
-  }, [filters.proximity]);
+  }, [fetchAdzunaJobs]);
+
+  const handleLoadMore = async () => {
+    if (isLoading) return;
+    const nextPage = page + 1;
+    setIsLoading(true);
+    
+    try {
+      const { jobs } = await fetchAdzunaJobs(currentQuery.what, currentQuery.where, nextPage);
+      setAllJobs(prev => [...prev, ...jobs]);
+      setPage(nextPage);
+    } catch (err) {
+      setSearchError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Update a job's savedStatus (tracker integration)
   const handleSave = useCallback((jobId, status) => {
-    setAllJobs((prev) =>
-      prev.map((job) =>
+    setAllJobs((prev) => {
+      const updated = prev.map((job) =>
         job.id === jobId ? { ...job, savedStatus: status } : job
-      )
-    );
+      );
+      
+      // Persistence for tracked_jobs
+      const jobToTrack = updated.find(j => j.id === jobId);
+      if (jobToTrack) {
+        const trackedRaw = localStorage.getItem('tracked_jobs') || '[]';
+        let tracked = JSON.parse(trackedRaw);
+        const existsIdx = tracked.findIndex(t => t.id === jobId);
+        if (existsIdx > -1) {
+          tracked[existsIdx] = jobToTrack;
+        } else {
+          tracked.push(jobToTrack);
+        }
+        localStorage.setItem('tracked_jobs', JSON.stringify(tracked));
+      }
+      
+      return updated;
+    });
   }, []);
 
-  // Apply filters and sort to the full job list
+  // Deduplication check against tracked_jobs and job_applications
+  const jobsWithTracking = useMemo(() => {
+    const trackedRaw = localStorage.getItem('tracked_jobs') || '[]';
+    const appsRaw = localStorage.getItem('job_applications') || '[]';
+    
+    const tracked = [...JSON.parse(trackedRaw), ...JSON.parse(appsRaw)];
+    
+    return allJobs.map(job => {
+      const isTracked = tracked.find(t => 
+        (t.company.toLowerCase() === job.company.toLowerCase() && t.title.toLowerCase() === job.title.toLowerCase()) ||
+        t.id === job.id
+      );
+      return isTracked ? { ...job, savedStatus: isTracked.status || isTracked.savedStatus || 'Saved' } : job;
+    });
+  }, [allJobs]);
+
+  // Apply filters and sort to the job list
   const filteredJobs = useMemo(() => {
-    let result = [...allJobs];
+    let result = [...jobsWithTracking];
 
     // Filter: Work Model
     if (filters.workModel !== 'All') {
@@ -159,25 +257,18 @@ export default function JobSearch() {
 
     // Filter: Role Type
     if (filters.roleType !== 'All') {
-      result = result.filter((j) => j.jobType === filters.roleType);
+      result = result.filter((j) => 
+        j.title.toLowerCase().includes(filters.roleType.toLowerCase())
+      );
     }
 
-    // Filter: Min Match Score
-    result = result.filter((j) => j.matchScore >= filters.minMatchScore);
-
-    // Filter: Proximity (Remote jobs always pass; On-site/Hybrid filtered by distanceMiles)
-    if (filters.proximity !== 'Any') {
-      const maxMiles = parseInt(filters.proximity, 10);
-      result = result.filter(
-        (j) => j.workModel === 'Remote' || j.distanceMiles === null || j.distanceMiles <= maxMiles
-      );
+    // Filter: Min Match Score (if we had scores)
+    if (filters.minMatchScore > 0) {
+      result = result.filter((j) => j.matchScore >= filters.minMatchScore);
     }
 
     // Sort
     switch (filters.sortBy) {
-      case 'matchScore':
-        result.sort((a, b) => b.matchScore - a.matchScore);
-        break;
       case 'recent':
         result.sort((a, b) => {
           const dateA = a.postedDate ? new Date(a.postedDate) : new Date(0);
@@ -191,7 +282,7 @@ export default function JobSearch() {
     }
 
     return result;
-  }, [allJobs, filters]);
+  }, [jobsWithTracking, filters]);
 
   return (
     <section className="w-full max-w-4xl mx-auto px-4 py-8">
@@ -208,6 +299,26 @@ export default function JobSearch() {
       {/* Search bar */}
       <div className="mb-6">
         <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+        
+        {/* Cache and Limit Info */}
+        <div className="mt-2 flex flex-col gap-1">
+          {isCached && lastUpdated && (
+            <p className="text-xs text-slate-500">
+              Results cached · Updated {Math.round((Date.now() - lastUpdated) / 60000)} minutes ago · 
+              <button 
+                onClick={() => handleSearch(currentQuery.what, currentQuery.where, true)}
+                className="ml-1 text-blue-600 hover:underline"
+              >
+                Refresh
+              </button>
+            </p>
+          )}
+          {requestCount > 900 && (
+            <p className="text-xs text-amber-600 font-medium">
+              Approaching monthly search limit — results may be cached longer
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Filter bar — only shown when there are results or loading */}
@@ -216,33 +327,57 @@ export default function JobSearch() {
           <FilterBar
             filters={filters}
             onChange={setFilters}
-            resultCount={isLoading ? 0 : filteredJobs.length}
+            resultCount={isLoading ? 0 : totalResults}
           />
         </div>
       )}
 
       {/* Results area */}
-      {isLoading ? (
+      {isLoading && allJobs.length === 0 ? (
         // Loading skeletons
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <JobCardSkeleton key={i} />
           ))}
         </div>
-      ) : searchError || !hasSearched || filteredJobs.length === 0 ? (
+      ) : searchError || (!hasSearched && allJobs.length === 0) || (hasSearched && filteredJobs.length === 0 && !isLoading) ? (
         // Empty / error states
         <EmptyState hasSearched={hasSearched} error={searchError} />
       ) : (
         // Job cards grid
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredJobs.map((job) => (
-            <JobCard
-              key={job.id}
-              job={job}
-              onSave={handleSave}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredJobs.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                onSave={handleSave}
+              />
+            ))}
+          </div>
+          
+          {/* Load More Button */}
+          {allJobs.length < totalResults && (
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={handleLoadMore}
+                disabled={isLoading}
+                className="
+                  flex items-center gap-2 px-8 py-3
+                  bg-white dark:bg-slate-800
+                  border border-slate-200 dark:border-slate-700
+                  text-slate-600 dark:text-slate-300
+                  font-semibold rounded-xl
+                  hover:bg-slate-50 dark:hover:bg-slate-700
+                  transition-all duration-200
+                  disabled:opacity-50
+                "
+              >
+                {isLoading ? 'Loading...' : 'Load more results'}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
     </section>
