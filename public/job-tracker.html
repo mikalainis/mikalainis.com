@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7WRR3BEPZ3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-7WRR3BEPZ3');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikalogix | Job Application Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0F172A;
+            --surface: rgba(30, 41, 59, 0.5);
+            --surface-hover: rgba(30, 41, 59, 0.7);
+            --border: rgba(51, 65, 85, 0.7);
+            --text-primary: #F1F5F9;
+            --text-secondary: #94A3B8;
+            --accent: #38BDF8;
+            --accent-hover: #7DD3FC;
+            --accent-muted: rgba(56, 189, 248, 0.1);
+            --accent-glow: rgba(56, 189, 248, 0.25);
+            --white: #FFFFFF;
+            
+            /* Status Colors */
+            --status-applied: #38BDF8;
+            --status-interviewing: #F59E0B;
+            --status-offered: #10B981;
+            --status-rejected: #EF4444;
+            --status-other: #94A3B8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* Utils */
+        .container {
+            max-width: 1152px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .section-padding {
+            padding: 6rem 0;
+        }
+
+        .text-accent { color: var(--accent); }
+        .text-secondary { color: var(--text-secondary); }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px var(--accent-glow);
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: #CBD5E1;
+            border: 1px solid #334155;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+        }
+
+        .btn-ghost:hover {
+            border-color: rgba(56, 189, 248, 0.5);
+            color: var(--accent);
+            background-color: var(--accent-muted);
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 50;
+            background-color: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #1E293B;
+        }
+
+        .nav-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo-box {
+            width: 2.25rem;
+            height: 2.25rem;
+            background-color: var(--accent);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg);
+            font-weight: 800;
+            font-size: 0.875rem;
+        }
+
+        .logo-text {
+            color: #E2E8F0;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        /* Hero / Header */
+        .page-header {
+            padding-top: 8rem;
+            padding-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px), 
+                linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+            background-size: 64px 64px;
+            z-index: -1;
+        }
+
+        .section-tag {
+            color: var(--accent);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.025em;
+        }
+
+        .accent-bar {
+            width: 3rem;
+            height: 0.125rem;
+            background-color: var(--accent);
+            margin-bottom: 2rem;
+        }
+
+        /* Projects Grid Layout */
+        .projects-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 768px) {
+            .projects-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .project-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .project-card:hover {
+            border-color: rgba(56, 189, 248, 0.2);
+            background-color: var(--surface-hover);
+            transform: translateY(-2px);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .project-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #F8FAFC;
+        }
+
+        .project-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            background-color: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .project-tag.applied { color: var(--status-applied); border-color: rgba(56, 189, 248, 0.3); }
+        .project-tag.interviewing { color: var(--status-interviewing); border-color: rgba(245, 158, 11, 0.3); }
+        .project-tag.offered { color: var(--status-offered); border-color: rgba(16, 185, 129, 0.3); }
+        .project-tag.rejected { color: var(--status-rejected); border-color: rgba(239, 68, 68, 0.3); }
+
+        .project-meta {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+            font-weight: 500;
+        }
+
+        .project-desc {
+            font-size: 0.9375rem;
+            color: #E2E8F0;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .tags-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tag-pill {
+            font-size: 0.7rem;
+            background-color: #1E293B;
+            border: 1px solid #334155;
+            color: var(--text-secondary);
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-weight: 600;
+        }
+
+        .project-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 0;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 3px solid var(--surface);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid #1E293B;
+            padding: 3rem 0;
+            margin-top: 6rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        @media (min-width: 768px) {
+            .footer-content { flex-direction: row; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="nav-content">
+                <a href="/" class="logo">
+                    <div class="logo-box">ML</div>
+                    <span class="logo-text">Mikalogix</span>
+                </a>
+                <div class="nav-links">
+                    <a href="/consultancy.html">Services</a>
+                    <a href="/resume.html">Résumé</a>
+                    <a href="/" class="btn btn-ghost">Back to Portfolio</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="page-header">
+        <div class="grid-overlay"></div>
+        <div class="container">
+            <p class="section-tag">Internal Tools</p>
+            <h1>Job Application Tracker</h1>
+            <div class="accent-bar"></div>
+            <p class="text-secondary" style="max-width: 600px;">
+                Real-time tracking of active job applications, automated via Google Apps Script and Gmail integration.
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding-bottom: 6rem;">
+        <div id="tracker-root">
+            <div class="loading-container">
+                <div class="spinner"></div>
+                <p>Fetching application data...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <p style="color: #F8FAFC; font-weight: 600; margin-bottom: 0.25rem;">Mikalogix LLC</p>
+                    <p>AI & Automation Consulting · Basking Ridge, NJ</p>
+                </div>
+                <div style="text-align: right;">
+                    &copy; 2026 Mikalogix. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxEVtX_JMGx0vnxE1SHcesWq6qmQQAS9_WrHCrMgjPAM9hkp01KZHmnneSQt4B4Yabn/exec';
+
+        async function fetchApplications() {
+            const root = document.getElementById('tracker-root');
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                if (!Array.isArray(data) || data.length === 0) {
+                    root.innerHTML = '<div class="loading-container"><p>No active applications found.</p></div>';
+                    return;
+                }
+
+                renderApplications(data);
+            } catch (error) {
+                console.error('Error fetching applications:', error);
+                root.innerHTML = '<div class="loading-container"><p style="color: var(--status-rejected)">Failed to load data. Please try again later.</p></div>';
+            }
+        }
+
+        function getStatusClass(status) {
+            if (!status) return '';
+            const s = status.toLowerCase();
+            if (s.includes('applied') || s.includes('confirmed')) return 'applied';
+            if (s.includes('interview')) return 'interviewing';
+            if (s.includes('offer')) return 'offered';
+            if (s.includes('reject') || s.includes('not moving')) return 'rejected';
+            return '';
+        }
+
+        function renderApplications(apps) {
+            const root = document.getElementById('tracker-root');
+            
+            let html = '<div class="projects-grid">';
+            
+            apps.forEach(app => {
+                // Map fields based on common GAS patterns
+                const company = app.Company || app.company || 'Unknown Company';
+                const role = app.Role || app.role || 'Position';
+                const status = app.Status || app.status || 'Applied';
+                const date = app.Date || app.date || '';
+                const notes = app.Notes || app.notes || app['Next Step'] || '';
+                const thread = app['Thread Link'] || app.link || '';
+                const reason = app['Rejection Reason'] || app.rejectionReason || '';
+                
+                const statusClass = getStatusClass(status);
+                
+                html += `
+                    <div class="project-card">
+                        <div class="project-header">
+                            <h3>${company}</h3>
+                            <span class="project-tag ${statusClass}">${status}</span>
+                        </div>
+                        <p class="project-meta">${role}${date ? ` · ${date}` : ''}</p>
+                        
+                        <div class="project-desc">
+                            ${notes ? `<p style="margin-bottom: 0.5rem;"><strong>Next Step:</strong> ${notes}</p>` : ''}
+                            ${reason ? `<p style="color: var(--text-secondary); font-size: 0.875rem;"><em>${reason}</em></p>` : ''}
+                            ${!notes && !reason ? '<p class="text-secondary">Application processed and tracked.</p>' : ''}
+                        </div>
+
+                        <div class="project-footer">
+                            <span class="text-secondary" style="font-size: 0.75rem;">Source: Gmail Automation</span>
+                            ${thread ? `
+                                <a href="${thread}" target="_blank" class="btn btn-ghost">
+                                    View Thread
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            root.innerHTML = html;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', fetchApplications);
+    </script>
+</body>
+</html>
