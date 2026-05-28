@@ -1699,7 +1699,11 @@ async function startEmailScan() {
             const prompt = `Classify these emails as job application updates. For each relevant one, extract:
 - index, company, role, status, nextStep, rejectionReason
 - STATUS must be: "confirmed" (received), "in_progress" (interviewing/action), or "rejected".
-- COMPANY: Carefully identify the hiring company. Prioritize the sender's display name and the email domain from the "From" and "Domain" fields (e.g., if From is "Acme Corp <hr@acme.com>", the company is "Acme Corp"). If the domain is a generic provider like gmail.com or outlook.com, rely more on the Subject, From name, and Snippet signatures (e.g., "Best, [Company]" or "[Company] Team"). Use both name and domain context to ensure accuracy.
+- COMPANY: Carefully identify the hiring company. 
+  - Look for the company name in the sender's display name (e.g., "Uber" in "Uber Recruiting <uber@talent.icims.com>").
+  - If the domain is a recruiting portal (icims.com, workday.com, myworkday.com, successfactors.com, hr.pseg.ns2cloud.com, taleo.net), the company is usually the prefix or part of the subdomain (e.g., "Uber" for icims, "Accenture" for workday, "PSEG" for ns2cloud).
+  - For addresses like jobs@adp.com, donotreply@deloitte.com, citi@myworkday.com, the company is ADP, Deloitte, and Citi respectively.
+  - If the domain is a generic provider like gmail.com, rely on the Subject, From name, and Snippet signatures.
 - ROLE: Extract the job title from the Subject (e.g., "Thank you for your application - [Job Title]").
 - REJECTION: If the snippet contains phrases like "decided to move forward with other candidates", "skills are a closer match", "not selected", "position has been filled", "won't be moving forward", set status to "rejected".
 
