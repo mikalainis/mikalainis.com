@@ -11,10 +11,11 @@ A modern, high-performance landing page featuring:
 - **Skills Matrix:** Core competencies in Python, SQL, GCP, and AI/ML.
 - **Certifications:** Professional credentials and continuous learning.
 
-### 💼 Consultancy Landing Page (`/consultancy.html`)
-A standalone, self-contained landing page for Paulius's consulting services, styled to match the main portfolio.
+### 💼 Mikalogix LLC Consultancy (`/consultancy.html`)
+A standalone, self-contained landing page for **Mikalogix LLC**, Paulius's professional consultancy.
 - **Services:** AI Agent Development, Workflow Automation, and Legacy Modernization.
 - **Project Highlights:** Focused on business impact and systems engineering.
+- **Interactive Stepper:** A guided look at the consultancy engagement process.
 - **Availability Tracking:** Real-time availability badge for new engagements.
 
 ### 🛠 Career Tools (`/tools/resume-builder`)
@@ -59,7 +60,7 @@ lib/
   systemPrompt.js                 # Centralized AI personality and candidate profile
 public/
   tools/resume-builder.html       # Standalone static AI Resume Builder
-consultancy.html                  # Standalone consultancy landing page
+  consultancy.html                # Mikalogix LLC consultancy landing page
 ```
 
 ## 🛠 Getting Started
