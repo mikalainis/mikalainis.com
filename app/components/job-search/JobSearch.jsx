@@ -412,3 +412,72 @@ export default function JobSearch() {
     </section>
   );
 }
+
+// --- Helper Components ---
+
+function JobCardSkeleton() {
+  return (
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 animate-pulse">
+      <div className="flex justify-between items-start mb-4">
+        <div className="w-1/2 h-6 bg-slate-200 dark:bg-slate-700 rounded" />
+        <div className="w-12 h-6 bg-slate-100 dark:bg-slate-700 rounded-full" />
+      </div>
+      <div className="w-1/3 h-4 bg-slate-100 dark:bg-slate-700 rounded mb-6" />
+      <div className="flex gap-2 mb-6">
+        <div className="w-16 h-5 bg-slate-50 dark:bg-slate-700 rounded-lg" />
+        <div className="w-20 h-5 bg-slate-50 dark:bg-slate-700 rounded-lg" />
+      </div>
+      <div className="flex justify-between mt-auto pt-4 border-t border-slate-50 dark:border-slate-700">
+        <div className="w-24 h-8 bg-slate-100 dark:bg-slate-700 rounded-lg" />
+        <div className="w-24 h-8 bg-slate-100 dark:bg-slate-700 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ hasSearched, error }) {
+  if (error) {
+    return (
+      <div className="text-center py-12 px-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20">
+        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mx-auto mb-4">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-bold text-red-800 dark:text-red-400 mb-2">Search Error</h3>
+        <p className="text-red-600 dark:text-red-500 max-w-xs mx-auto text-sm">{error}</p>
+      </div>
+    );
+  }
+
+  if (hasSearched) {
+    return (
+      <div className="text-center py-16 px-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mx-auto mb-4">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">No matching jobs</h3>
+        <p className="text-slate-500 dark:text-slate-400 max-w-xs mx-auto text-sm">
+          Try adjusting your filters or searching for different keywords.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-center py-20 px-4">
+      <div className="w-20 h-20 bg-sky-50 dark:bg-sky-900/10 rounded-3xl flex items-center justify-center text-sky-500 mx-auto mb-6 transform -rotate-6">
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-3">Ready to find your next role?</h3>
+      <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+        Enter a job title and location above to start your AI-powered job search.
+      </p>
+    </div>
+  );
+}
+

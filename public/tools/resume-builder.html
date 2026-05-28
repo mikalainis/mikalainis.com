@@ -183,6 +183,26 @@
 </head>
 <body class="text-gray-800 antialiased p-4 md:p-8 min-h-screen">
 
+<!-- Password Protection Overlay -->
+<div id="password-overlay" class="fixed inset-0 bg-slate-900 z-[99999] flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-2xl p-8 shadow-2xl text-center">
+        <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mx-auto mb-6">
+            <i data-lucide="lock" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Private Access</h2>
+        <p class="text-gray-500 text-sm mb-8">Please enter the password to access the Resume Builder.</p>
+        <form onsubmit="checkToolsPassword(event)" class="space-y-4">
+            <input type="password" id="tools-password-input" placeholder="Enter password" 
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            <div id="password-error" class="text-red-500 text-xs hidden text-left px-1">Incorrect password</div>
+            <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all">
+                Unlock Tool
+            </button>
+        </form>
+        <a href="/" class="block mt-8 text-gray-400 hover:text-gray-600 text-sm font-medium">← Back to Portfolio</a>
+    </div>
+</div>
+
 <div class="max-w-[1400px] mx-auto w-full flex flex-col md:flex-row gap-8 items-start relative">
 
     <!-- ═══════════════════════════════════════════
@@ -973,6 +993,28 @@
 <script>
 // ============================================================
 // ============================================================
+// AUTH PROTECTION
+// ============================================================
+function checkToolsPassword(e) {
+    if (e) e.preventDefault();
+    const input = document.getElementById('tools-password-input');
+    const error = document.getElementById('password-error');
+    if (input.value === 'admin') {
+        localStorage.setItem('tools_authenticated', 'true');
+        document.getElementById('password-overlay').classList.add('hidden');
+        if (error) error.classList.add('hidden');
+        lucide.createIcons(); // Re-init icons just in case
+    } else {
+        if (error) error.classList.remove('hidden');
+    }
+}
+
+function initAuth() {
+    if (localStorage.getItem('tools_authenticated') === 'true') {
+        document.getElementById('password-overlay').classList.add('hidden');
+    }
+}
+
 // GOOGLE AUTH CONFIG
 // ─ Set YOUR_CLIENT_ID below once, then deploy.
 // ─ Register your domain in Google Cloud Console →
@@ -1422,28 +1464,7 @@ function clearFolderFilter() {
 // ============================================================
 const APPLICATIONS_FOLDER_ID = '1T0rrDH7IQHmdln0DjKo4Q-yIgqXouyfg'; // Your "Applications" Drive folder
 // Statuses: 'confirmed' | 'in_progress' | 'rejected'
-const SEED_APPLICATIONS = [
-  { id:'seed_01', company:'Barclays',           role:'VP, Senior Data Engineer',                        status:'confirmed',   date:'2026-05-20', source:'gmail', nextStep:'Complete online assessment (Workday)', rejectionReason:'', notes:'Invited to next stage of assessment process. Ref: JR-0000061571' },
-  { id:'seed_02', company:'Zillow',             role:'Senior BI Analyst, Strategic Planning & Insights',status:'confirmed',   date:'2026-05-20', source:'gmail', nextStep:'Await recruiter review',               rejectionReason:'', notes:'Application confirmed via Workday' },
-  { id:'seed_03', company:'Johnson & Johnson',  role:'Lead Product Analyst – AI & Data Analytics',      status:'confirmed',   date:'2026-05-20', source:'gmail', nextStep:'Await recruiter review',               rejectionReason:'', notes:'Ref: R-075301' },
-  { id:'seed_04', company:'Valley Bank',        role:'Business Intelligence Analyst',                   status:'rejected',    date:'2026-05-20', source:'gmail', nextStep:'',                                     rejectionReason:'Application not moving forward per ADP notification', notes:'Ref: 26-297' },
-  { id:'seed_05', company:'The Hartford',       role:'Data Scientist',                                  status:'confirmed',   date:'2026-05-19', source:'gmail', nextStep:'Await recruiter review',               rejectionReason:'', notes:'Application confirmed via Workday' },
-  { id:'seed_06', company:'Valley Bank',        role:'Data Scientist',                                  status:'in_progress', date:'2026-05-16', source:'gmail', nextStep:'Complete profile & resubmit application',rejectionReason:'', notes:'Profile incomplete — additional info needed. Ref: 26-258' },
-  { id:'seed_07', company:'TCS',               role:'Python Developer',                                 status:'confirmed',   date:'2026-05-15', source:'gmail', nextStep:'Complete multi-step TCS process',       rejectionReason:'', notes:'Job ID: 409743. Profile created successfully.' },
-  { id:'seed_08', company:'MSIG-USA',           role:'Senior Data Scientist',                           status:'confirmed',   date:'2026-05-15', source:'gmail', nextStep:'Await recruiter review',               rejectionReason:'', notes:'Application confirmed via Workday' },
-  { id:'seed_09', company:'US Government',      role:'Program Analyst (GS-12)',                         status:'confirmed',   date:'2026-05-14', source:'gmail', nextStep:'Await hiring office decision',          rejectionReason:'', notes:'Notice of Results received. Ref: 12948921' },
-  { id:'seed_10', company:'ADP',               role:'Lead Data Scientist',                              status:'confirmed',   date:'2026-05-13', source:'gmail', nextStep:'Await recruiter review',               rejectionReason:'', notes:'Application confirmed' },
-  { id:'seed_11', company:'Johnson & Johnson',  role:'Senior Data Scientist, Generative AI',            status:'confirmed',   date:'2026-05-13', source:'gmail', nextStep:'Await recruiter review',               rejectionReason:'', notes:'Ref: R-033604' },
-  { id:'seed_12', company:'Palantir',           role:'Deployment Strategist',                           status:'confirmed',   date:'2026-05-13', source:'gmail', nextStep:'Await match review from team',          rejectionReason:'', notes:'Submitted via Lever' },
-  { id:'seed_13', company:'Accenture',          role:'EPM Planning Manager',                            status:'rejected',    date:'2026-05-13', source:'gmail', nextStep:'',                                     rejectionReason:'Carefully considered — not selected to move forward', notes:'' },
-  { id:'seed_14', company:'Bristol Myers Squibb',role:'Senior Manager, Intelligence Systems Lab',       status:'confirmed',   date:'2026-05-12', source:'gmail', nextStep:'Await talent acquisition review',       rejectionReason:'', notes:'Ref: R1599047' },
-  { id:'seed_15', company:'Deloitte',           role:'Finance Analytics & AI Manager',                  status:'confirmed',   date:'2026-05-12', source:'gmail', nextStep:'Check My Jobs for status',              rejectionReason:'', notes:'Position: 321709' },
-  { id:'seed_16', company:'Indeed Apply',       role:'BI Developer',                                    status:'in_progress', date:'2026-05-13', source:'drive', nextStep:'Await employer response',               rejectionReason:'', notes:'Applied via Indeed. Resume: BI Developer.pdf' },
-  { id:'seed_17', company:'Indeed Apply',       role:'Corporate Finance Specialist',                    status:'in_progress', date:'2026-05-13', source:'drive', nextStep:'Await employer response',               rejectionReason:'', notes:'Applied via Indeed. Resume: Corporate Finance Specialist.pdf' },
-  { id:'seed_18', company:'(Unspecified)',       role:'Data Scientist',                                  status:'in_progress', date:'2026-05-19', source:'drive', nextStep:'Await employer response',               rejectionReason:'', notes:'Resume: Data Scientist.pdf uploaded 2026-05-19' },
-  { id:'seed_19', company:'(Unspecified)',       role:'Corp Finance AI Engineer',                        status:'in_progress', date:'2026-05-19', source:'drive', nextStep:'Await employer response',               rejectionReason:'', notes:'Resume: Corp Finance AI Engineer.pdf' },
-  { id:'seed_20', company:'(Unspecified)',       role:'Statistician',                                    status:'in_progress', date:'2026-05-16', source:'drive', nextStep:'Await employer response',               rejectionReason:'', notes:'Resume: Statistician.pdf' },
-];
+const SEED_APPLICATIONS = [];
 
 let applications = [];
 let activeFilter = 'all';
@@ -2247,6 +2268,7 @@ async function fetchGeminiModels(silent = false) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    initAuth();
     // Restore Gemini settings
     const savedKey = getLocalStorageSafe('gemini_api_key');
     if (savedKey) document.getElementById('global-api-key-input').value = savedKey;
