@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 
 export default function AuthGuard({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -18,15 +19,17 @@ export default function AuthGuard({ children }) {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // In a real app, this would be a server-side check.
-    // For this portfolio, we use a simple client-side check with a password.
-    // The user can change this password or move it to an env var if they want.
-    if (password === 'admin') {
+    
+    // Get stored credentials or default to admin/admin
+    const storedUsername = localStorage.getItem('tools_username') || 'admin';
+    const storedPassword = localStorage.getItem('tools_password') || 'admin';
+
+    if (username === storedUsername && password === storedPassword) {
       localStorage.setItem('tools_authenticated', 'true');
       setIsAuthenticated(true);
       setError('');
     } else {
-      setError('Incorrect password');
+      setError('Incorrect username or password');
     }
   };
 
@@ -50,24 +53,35 @@ export default function AuthGuard({ children }) {
           </div>
           <h2 className="text-2xl font-bold text-slate-100 text-center mb-2">Private Access</h2>
           <p className="text-slate-400 text-center text-sm mb-8">
-            Please enter the password to access the Career Tools.
+            Please enter your credentials to access the Career Tools.
           </p>
           
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5 ml-1">Username</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
+                className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5 ml-1">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
-                autoFocus
+                className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all"
               />
               {error && <p className="text-red-500 text-xs mt-2 ml-1">{error}</p>}
             </div>
             <button
               type="submit"
-              className="w-full py-3 bg-sky-500 hover:bg-sky-400 text-slate-900 font-bold rounded-xl transition-all shadow-lg shadow-sky-500/20"
+              className="w-full py-3 bg-sky-500 hover:bg-sky-400 text-slate-900 font-bold rounded-xl transition-all shadow-lg shadow-sky-500/20 mt-2"
             >
               Unlock Tools
             </button>
@@ -88,3 +102,4 @@ export default function AuthGuard({ children }) {
 
   return children;
 }
+
