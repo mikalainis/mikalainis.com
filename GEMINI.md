@@ -24,6 +24,7 @@ Before any task, scan the project directory and identify:
 - job-search.html (or similar) — AI job search application
 - job-tracker.html (or similar) — job application tracker
 - resume-builder.html (or similar) — AI resume builder
+- public/predictive-planning.html — Predictive Planning project page
 - public/ — static assets (images, icons, etc.)
 - GEMINI.md — standing instructions (this file)
 - git-commit.sh — git helper script (never run git directly)
@@ -104,11 +105,12 @@ When adding a new page:
 11. Privacy Policy page
 
 ## Projects in the Grid
-1. Web Design & Development (y-swim.com, mikalainis.com, kofc2393.org)
-2. AI Job Search Assistant (internal link)
-3. Job Application Tracker (internal link)
-4. Resume Builder (internal link)
-5. St. James Men of Charity — Fundraiser Design (sjmoc.org)
+1. Predictive Planning (AI-powered Google Sheets add-on)
+2. Web Design & Development (y-swim.com, mikalainis.com, kofc2393.org)
+3. AI Job Search Assistant (internal link)
+4. Job Application Tracker (internal link)
+5. Resume Builder (internal link)
+6. St. James Men of Charity — Fundraiser Design (sjmoc.org)
 
 ## Use Cases (separate page, Problem → Solution → Outcome format)
 1. Intelligent Workflow Engine — AI-powered

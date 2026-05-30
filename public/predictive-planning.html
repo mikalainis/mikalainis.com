@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7WRR3BEPZ3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-7WRR3BEPZ3');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictive Planning | AI-Powered Google Sheets Add-on</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0F172A;
+            --surface: rgba(30, 41, 59, 0.5);
+            --surface-hover: rgba(30, 41, 59, 0.7);
+            --border: rgba(51, 65, 85, 0.7);
+            --text-primary: #F1F5F9;
+            --text-secondary: #94A3B8;
+            --accent: #38BDF8;
+            --accent-hover: #7DD3FC;
+            --accent-muted: rgba(56, 189, 248, 0.1);
+            --accent-glow: rgba(56, 189, 248, 0.25);
+            --white: #FFFFFF;
+            --google-blue: #4285F4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1152px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #1E293B;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo-box {
+            width: 2.25rem;
+            height: 2.25rem;
+            background-color: var(--accent);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg);
+            font-weight: 800;
+            font-size: 0.875rem;
+        }
+
+        .logo-text {
+            color: #E2E8F0;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        /* Hero Banner */
+        .hero {
+            width: 100%;
+            height: 480px;
+            background-image: url('predictive-planning/images/banner.png');
+            background-size: cover;
+            background-position: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .main-intro {
+            padding: 5rem 0 2rem;
+            text-align: center;
+        }
+
+        .main-intro h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.025em;
+        }
+
+        .main-intro p {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px var(--accent-glow);
+        }
+
+        /* Sections */
+        section {
+            padding: 5rem 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        /* About Section */
+        .about-text {
+            max-width: 800px;
+            margin: 0 auto 4rem;
+            text-align: center;
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 1rem;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .feature-icon {
+            width: 3rem;
+            height: 3rem;
+            background-color: var(--accent-muted);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        /* Screenshot Gallery */
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .screenshot-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .screenshot-item {
+            position: relative;
+            cursor: pointer;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+        }
+
+        .screenshot-item img {
+            width: 100%;
+            display: block;
+            transition: transform 0.3s;
+        }
+
+        .screenshot-item:hover img {
+            transform: scale(1.05);
+        }
+
+        .screenshot-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(15, 23, 42, 0.9));
+            padding: 1.5rem 1rem 1rem;
+            color: var(--white);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Lightbox (Basic CSS) */
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.95);
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .lightbox:target {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 0.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .close-lightbox {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            color: var(--white);
+            font-size: 2rem;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* How It Works */
+        .steps-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .steps-container {
+                flex-direction: column;
+            }
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+        }
+
+        .step-number {
+            width: 4rem;
+            height: 4rem;
+            background-color: var(--accent);
+            color: var(--bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 0 auto 1.5rem;
+        }
+
+        .step h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .step p {
+            color: var(--text-secondary);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid #1E293B;
+            padding: 4rem 0;
+            color: var(--text-secondary);
+            background-color: #0B1120;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        .disclaimer {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            max-width: 600px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { font-size: 1.125rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <div class="nav-content">
+                <a href="/" class="logo">
+                    <div class="logo-box">PM</div>
+                    <span class="logo-text">Mikalogix</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero"></header>
+
+    <section class="main-intro">
+        <div class="container">
+            <h1>Predictive Planning</h1>
+            <p>AI-powered predictive planning, right inside Google Sheets</p>
+            <a href="#" class="btn btn-primary" onclick="gtag('event', 'marketplace_click', { event_category: 'External', event_label: 'google_marketplace' });">
+                Get it on Google Workspace Marketplace
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+        </div>
+    </section>
+
+    <section id="about">
+        <div class="container">
+            <div class="about-text">
+                <p>Predictive Planning helps you forecast future trends, analyze historical data, and make data-driven decisions directly within your spreadsheets. Leverage advanced machine learning models without leaving Google Sheets.</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    </div>
+                    <h3>Smart Forecasting</h3>
+                    <p>Generate accurate future projections based on your historical data with just a few clicks. No complex formulas required.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3>Data Cleaning</h3>
+                    <p>Automatically identify and fix anomalies in your datasets to ensure high-quality predictions and reliable insights.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    </div>
+                    <h3>Custom Models</h3>
+                    <p>Train and deploy predictive models tailored to your specific business needs and unique data patterns.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="screenshots" style="background-color: rgba(15, 23, 42, 0.3);">
+        <div class="container">
+            <div class="section-title">
+                <h2>See It In Action</h2>
+            </div>
+            
+            <div class="screenshot-grid">
+                <a href="#img1" class="screenshot-item">
+                    <img src="predictive-planning/images/Screenshot 2026-05-25 9.27.02 PM.png" alt="Forecast view">
+                    <div class="screenshot-caption">Forecast view</div>
+                </a>
+                <a href="#img2" class="screenshot-item">
+                    <img src="predictive-planning/images/Screenshot 2026-05-26 6.42.29 AM.png" alt="Planning dashboard">
+                    <div class="screenshot-caption">Planning dashboard</div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lightbox targets -->
+    <div id="img1" class="lightbox">
+        <a href="#screenshots" class="close-lightbox">&times;</a>
+        <img src="predictive-planning/images/Screenshot 2026-05-25 9.27.02 PM.png" alt="Forecast view">
+    </div>
+    <div id="img2" class="lightbox">
+        <a href="#screenshots" class="close-lightbox">&times;</a>
+        <img src="predictive-planning/images/Screenshot 2026-05-26 6.42.29 AM.png" alt="Planning dashboard">
+    </div>
+
+    <section id="how-it-works">
+        <div class="container">
+            <div class="section-title">
+                <h2>How It Works</h2>
+            </div>
+            
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Install</h3>
+                    <p>Get the add-on from the Google Workspace Marketplace in seconds.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Configure</h3>
+                    <p>Connect your data and select the metrics you want to predict.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Predict</h3>
+                    <p>Run forecasts and visualize results directly in your sheet.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="/predictive-planning-terms.html">Terms of Service</a>
+                    <a href="/predictive-planning-privacy.html">Privacy Policy</a>
+                </div>
+                <p>Support: pmikalainis@gmail.com</p>
+                <p class="disclaimer">Predictive Planning is a product of Mikalogix LLC. Google Sheets and Google Workspace are trademarks of Google LLC. Predictive Planning is not affiliated with Google LLC.</p>
+                <p>&copy; 2026 Mikalogix LLC. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

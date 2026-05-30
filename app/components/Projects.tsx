@@ -1,5 +1,12 @@
 const PROJECTS = [
   {
+    title: 'Predictive Planning',
+    tech: 'Google Sheets API · Machine Learning · Next.js',
+    link: '/predictive-planning.html',
+    outcomes: 'AI-powered Google Sheets add-on for forecasting future trends and analyzing historical data directly within spreadsheets.',
+    category: 'AI-powered'
+  },
+  {
     title: 'Job Application Tracker',
     tech: 'Python · Gmail API · NLP · SQLite',
     link: '/tools/resume-builder.html',
