@@ -1,0 +1,64 @@
+    <main id="talent-card-view" class="hidden flex-1 w-full bg-white shadow-2xl rounded-xl border border-gray-200 overflow-hidden flex flex-col transition-all relative z-0 print-container">
+            <div class="tc-content-wrapper bg-white rounded-2xl overflow-hidden print:shadow-none flex-1">
+            <div class="bg-white px-8 py-6 print-pad border-b-2 border-gray-200 flex flex-col md:flex-row items-center md:items-start gap-6 print-row">
+                <div class="flex-shrink-0 relative group cursor-pointer inline-block" onclick="document.getElementById('tc-photoUpload').click()">
+                    <img id="tc-profileImage" src="https://ui-avatars.com/api/?name=Paulius+Mikalainis&background=EBF4FF&color=1E3A8A&size=150" alt="Paulius Mikalainis" class="w-32 h-32 object-cover rounded-full border-4 border-gray-100 group-hover:border-blue-400 transition-colors shadow-sm">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300 print-hide rounded-full bg-black/40">
+                        <span class="text-xs text-white font-semibold">Change Photo</span>
+                    </div>
+                    <input type="file" id="tc-photoUpload" class="hidden print-hide" accept="image/*" onchange="handleImageUpload(event)">
+                </div>
+                <div class="flex-grow text-center md:text-left mt-2 md:mt-0 print-text-left print-mt-0">
+                    <h1 id="tc-name" contenteditable="true" class="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">Paulius Mikalainis</h1>
+                    <h2 id="tc-title" contenteditable="true" class="text-lg md:text-xl text-blue-600 font-semibold uppercase tracking-wider mt-1 mb-3">AI Agent Developer & BI Leader</h2>
+                    <div id="tc-contact-container" class="flex flex-col md:flex-row flex-wrap gap-4 md:gap-6 text-xs text-gray-600 print-row">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 p-6 md:p-8 print-grid-tc">
+                <div class="lg:col-span-3 space-y-6 print-col-span-3">
+                    <section class="group/tcsec">
+                        <h3 class="text-lg font-bold text-blue-800 uppercase tracking-wider border-b border-gray-300 pb-1 mb-4 flex items-center justify-between gap-2 text-blue-800">
+                            <span class="flex items-center gap-2"><i data-lucide="briefcase" class="w-5 h-5 text-blue-600"></i> Professional Experience</span>
+                            <button type="button" onclick="addTcExperience()" class="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded opacity-0 group-hover/tcsec:opacity-100 transition-opacity font-bold no-print cursor-pointer">+ Add</button>
+                        </h3>
+                        <div id="tc-experience-container" class="relative border-l-2 border-gray-200 ml-3 space-y-2 pl-6">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </section>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 print-grid-2">
+                        <section class="group/tcsec">
+                            <h3 class="text-lg font-bold text-blue-800 uppercase tracking-wider border-b border-gray-300 pb-1 mb-4 flex items-center justify-between gap-2 text-blue-800">
+                                <span class="flex items-center gap-2"><i data-lucide="graduation-cap" class="w-5 h-5 text-blue-600"></i> Education</span>
+                                <button type="button" onclick="addTcEducation()" class="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded opacity-0 group-hover/tcsec:opacity-100 transition-opacity font-bold no-print cursor-pointer">+ Add</button>
+                            </h3>
+                            <ul id="tc-education-container" class="space-y-2 text-gray-700">
+                                <!-- Populated dynamically -->
+                            </ul>
+                        </section>
+                        <section class="group/tcsec">
+                            <h3 class="text-lg font-bold text-blue-800 uppercase tracking-wider border-b border-gray-300 pb-1 mb-4 flex items-center justify-between gap-2 text-blue-800">
+                                <span class="flex items-center gap-2"><i data-lucide="award" class="w-5 h-5 text-blue-600"></i> Certifications</span>
+                                <button type="button" onclick="addTcCertification()" class="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded opacity-0 group-hover/tcsec:opacity-100 transition-opacity font-bold no-print cursor-pointer">+ Add</button>
+                            </h3>
+                            <ul id="tc-certifications-container" class="space-y-2 text-gray-700">
+                                <!-- Populated dynamically -->
+                            </ul>
+                        </section>
+                    </div>
+                </div>
+                <div class="lg:col-span-1 print-col-span-1">
+                    <section id="tc-skills-container" class="group/tcsec">
+                        <h3 class="text-lg font-bold text-blue-800 uppercase tracking-wider border-b border-gray-300 pb-1 mb-4 flex items-center justify-between gap-2">
+                            <span class="flex items-center gap-2"><i data-lucide="code-2" class="w-5 h-5 text-blue-600"></i> Core Skills</span>
+                            <button type="button" onclick="addTcSkill()" class="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded opacity-0 group-hover/tcsec:opacity-100 transition-opacity font-bold no-print cursor-pointer">+ Add</button>
+                        </h3>
+                        <div class="flex flex-wrap gap-2">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>

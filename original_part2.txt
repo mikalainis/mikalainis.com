@@ -1,0 +1,1000 @@
+    const pInput = document.getElementById('tools-password-input');
+    const error = document.getElementById('password-error');
+    
+    const storedP = localStorage.getItem('tools_password') || 'admin';
+
+    if (pInput.value === storedP) {
+        localStorage.setItem('tools_authenticated', 'true');
+        document.getElementById('password-overlay').classList.add('hidden');
+        if (error) error.classList.add('hidden');
+        lucide.createIcons();
+    } else {
+        if (error) error.classList.remove('hidden');
+    }
+}
+
+function initAuth() {
+    if (localStorage.getItem('tools_authenticated') === 'true') {
+        document.getElementById('password-overlay').classList.add('hidden');
+    }
+}
+
+// GOOGLE AUTH CONFIG
+// ─ Set YOUR_CLIENT_ID below once, then deploy.
+// ─ Register your domain in Google Cloud Console →
+//   APIs & Services → Credentials → OAuth 2.0 Client IDs
+//   Authorized JavaScript origins: https://yourdomain.com
+// ─ Scopes: Gmail read-only + Drive read-only (no write access)
+// ============================================================
+const GOOGLE_CLIENT_ID = '951858916358-2h0on83a4s2o2t86r79q8sac8vh1ss7d.apps.googleusercontent.com';
+const GOOGLE_SCOPES = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/drive.readonly',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile'
+].join(' ');
+
+let googleAccessToken = null;
+let tokenClient = null;
+let isGapiReady = false;
+let selectedDriveFolderId = null;
+let selectedDriveFolderName = null;
+
+// ── Init — poll for both gapi and google.accounts to be ready ──
+// Both api.js and gsi/client load async. We poll for each independently
+// so isGapiReady and isGsiReady flip as soon as they are available,
+// regardless of load order. Max wait: 15 seconds each.
+let isGsiReady = false;
+
+function initGoogleLibraries() {
+    // Poll for gapi.client
+    let gapiAttempts = 0;
+    function waitForGapi() {
+        if (typeof gapi !== 'undefined') {
+            gapi.load('client', async () => {
+                try {
+                    await gapi.client.init({});
+                    isGapiReady = true;
+                    console.log('[Google] gapi.client ready');
+
+                    // Re-enable connect button if it was spinning
+                    const btn = document.getElementById('google-connect-btn');
+                    if (btn && !googleAccessToken) btn.disabled = false;
+
+                    // Try to restore saved session
+                    const savedToken  = getLocalStorageSafe('google_access_token');
+                    const tokenExpiry = parseInt(getLocalStorageSafe('google_token_expiry') || '0');
+                    if (savedToken && Date.now() < tokenExpiry) {
+                        googleAccessToken = savedToken;
+                        gapi.client.setToken({ access_token: savedToken });
+                        try {
+                            const uiR = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+                            const r = { result: await uiR.json() };
+                            if (!uiR.ok) throw new Error('token invalid');
+                            setGoogleConnected(true, r.result);
+                            loadDriveFiles();
+                            startAutoScanScheduler();
+                        } catch(e) {
+                            clearGoogleSession();
+                        }
+                    }
+                } catch(e) {
+                    console.warn('[Google] gapi.client.init error:', e);
+                }
+            });
+        } else if (gapiAttempts++ < 150) {
+            setTimeout(waitForGapi, 100);
+        } else {
+            console.warn('[Google] gapi failed to load after 15s');
+        }
+    }
+
+    // Poll for google.accounts.oauth2
+    let gsiAttempts = 0;
+    function waitForGsi() {
+        if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+            isGsiReady = true;
+            console.log('[Google] GSI ready');
+        } else if (gsiAttempts++ < 150) {
+            setTimeout(waitForGsi, 100);
+        } else {
+            console.warn('[Google] GSI failed to load after 15s');
+        }
+    }
+
+    waitForGapi();
+    waitForGsi();
+}
+
+// ── Connect ───────────────────────────────────────────────────
+function connectGoogle() {
+    if (GOOGLE_CLIENT_ID === 'YOUR_CLIENT_ID.apps.googleusercontent.com') {
+        showToast('Site owner: please set GOOGLE_CLIENT_ID in the script config.', true);
+        return;
+    }
+
+    // If libraries are still loading, show feedback and retry automatically
+    if (!isGapiReady || !isGsiReady) {
+        const btn = document.getElementById('google-connect-btn');
+        const orig = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg> <span>Loading Google API…</span>`;
+        }
+        // Poll until both are ready, then fire automatically (max 15s)
+        let attempts = 0;
+        const maxAttempts = 150; // 150 × 100ms = 15 seconds
+        const poll = setInterval(() => {
+            attempts++;
+            if (isGapiReady && isGsiReady) {
+                clearInterval(poll);
+                if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+                doConnectGoogle(); // now safe to call
+            } else if (attempts >= maxAttempts) {
+                clearInterval(poll);
+                if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+                showToast('Google API failed to load. Check your internet connection.', true);
+            }
+        }, 100);
+        return;
+    }
+
+    doConnectGoogle();
+}
+
+function doConnectGoogle() {
+    // Always create a fresh token client
+    // error_callback catches popup-blocked and other init errors
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: GOOGLE_SCOPES,
+        error_callback: (err) => {
+            console.error('Token client error:', err);
+            if (err.type === 'popup_failed_to_open' || err.type === 'popup_closed') {
+                showPopupBlockedGuide();
+            } else {
+                showToast('Google sign-in error: ' + (err.message || err.type), true);
+            }
+            // Re-enable the connect button
+            const btn = document.getElementById('google-connect-btn');
+            if (btn) { btn.disabled = false; btn.innerHTML = originalBtnHtml || 'Sign in with Google'; }
+        },
+        callback: async (response) => {
+            if (response.error) {
+                showGoogleError(response.error);
+                return;
+            }
+
+            googleAccessToken = response.access_token;
+            gapi.client.setToken({ access_token: googleAccessToken });
+
+            // Persist with 55-min expiry (tokens last 60 min)
+            setLocalStorageSafe('google_access_token', googleAccessToken);
+            setLocalStorageSafe('google_token_expiry',
+                String(Date.now() + 55 * 60 * 1000));
+
+            // Fetch and cache user profile
+            let profile = {};
+            try {
+                const uiResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo',
+                    { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+                profile = await uiResp.json();
+                setLocalStorageSafe('google_user_profile', JSON.stringify(profile));
+            } catch(e) {}
+
+            setGoogleConnected(true, profile);
+            loadDriveFiles();
+            startAutoScanScheduler();
+            showToast('Google account connected!');
+        }
+    });
+
+    // Store original button HTML so we can restore it on error
+    const btn = document.getElementById('google-connect-btn');
+    const originalBtnHtml = btn ? btn.innerHTML : '';
+
+    // prompt: '' means use existing session if available, 
+    // 'select_account' forces the account picker every time
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
+}
+
+// ── Popup blocked guide ───────────────────────────────────────
+function showPopupBlockedGuide() {
+    document.getElementById('popup-blocked-guide')?.remove();
+    const el = document.createElement('div');
+    el.id = 'popup-blocked-guide';
+    el.className = 'no-print';
+    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;' +
+        'max-width:380px;width:90%;background:#1e293b;color:#e2e8f0;border-radius:16px;padding:24px;' +
+        'box-shadow:0 20px 60px rgba(0,0,0,0.5);border:1px solid #334155;font-size:14px;line-height:1.6;';
+    el.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+            <div>
+                <div style="font-size:24px;margin-bottom:4px;">🚫</div>
+                <div style="font-weight:700;font-size:16px;color:#f1f5f9;">Popup Blocked</div>
+            </div>
+            <button type="button" onclick="document.getElementById('popup-blocked-guide').remove()"
+                style="background:none;border:none;color:#64748b;cursor:pointer;font-size:22px;line-height:1;padding:0;margin-top:-4px;">×</button>
+        </div>
+        <p style="color:#94a3b8;margin:0 0 16px;">Your browser blocked the Google sign-in popup. Allow popups for this site:</p>
+        <div style="background:#0f172a;border-radius:10px;padding:14px;margin-bottom:16px;">
+            <div style="font-weight:600;color:#e2e8f0;margin-bottom:10px;">Chrome / Edge:</div>
+            <ol style="margin:0;padding-left:18px;color:#94a3b8;display:flex;flex-direction:column;gap:6px;">
+                <li>Click the <strong style="color:#e2e8f0;">🚫 icon</strong> in the address bar</li>
+                <li>Select <strong style="color:#e2e8f0;">"Always allow popups"</strong></li>
+                <li>Click <strong style="color:#e2e8f0;">Done</strong> — page reloads automatically</li>
+            </ol>
+        </div>
+        <div style="background:#0f172a;border-radius:10px;padding:14px;margin-bottom:16px;">
+            <div style="font-weight:600;color:#e2e8f0;margin-bottom:10px;">Safari:</div>
+            <ol style="margin:0;padding-left:18px;color:#94a3b8;display:flex;flex-direction:column;gap:6px;">
+                <li>Go to <strong style="color:#e2e8f0;">Settings → Websites → Pop-ups</strong></li>
+                <li>Find <strong style="color:#e2e8f0;">mikalainis.com</strong> → set to <strong style="color:#e2e8f0;">Allow</strong></li>
+            </ol>
+        </div>
+        <button type="button"
+            onclick="document.getElementById('popup-blocked-guide').remove(); connectGoogle();"
+            style="width:100%;background:#6366f1;color:white;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;font-size:14px;margin-top:4px;">
+            Try Again →
+        </button>
+    `;
+    // Dark backdrop
+    const backdrop = document.createElement('div');
+    backdrop.id = 'popup-blocked-backdrop';
+    backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99998;';
+    backdrop.onclick = () => {
+        el.remove();
+        backdrop.remove();
+    };
+    document.body.appendChild(backdrop);
+    document.body.appendChild(el);
+}
+
+// ── Disconnect ────────────────────────────────────────────────
+function disconnectGoogle() {
+    if (googleAccessToken) {
+        google.accounts.oauth2.revoke(googleAccessToken, () => {});
+    }
+    clearGoogleSession();
+    setGoogleConnected(false);
+    document.getElementById('drive-files-list').innerHTML =
+        '<span class="italic text-gray-400 text-sm">Sign in with Google to see your files.</span>';
+    showToast('Signed out of Google.');
+}
+
+function clearGoogleSession() {
+    googleAccessToken = null;
+    if (typeof gapi !== 'undefined') gapi.client.setToken(null);
+    setLocalStorageSafe('google_access_token', '');
+    setLocalStorageSafe('google_token_expiry', '0');
+    setLocalStorageSafe('google_user_profile', '');
+}
+
+// ── UI state ──────────────────────────────────────────────────
+function setGoogleConnected(connected, profile) {
+    const disconnectedUI = document.getElementById('google-disconnected-ui');
+    const connectedPanel = document.getElementById('google-connected-panel');
+
+    if (connected) {
+        disconnectedUI?.classList.add('hidden');
+        connectedPanel?.classList.remove('hidden');
+        connectedPanel?.classList.add('flex');
+
+        if (profile) {
+            const nameEl   = document.getElementById('google-user-name');
+            const emailEl  = document.getElementById('google-user-email');
+            const avatarEl = document.getElementById('google-user-avatar');
+            if (nameEl  && profile.name)    nameEl.textContent  = profile.name;
+            if (emailEl && profile.email)   emailEl.textContent = profile.email;
+            if (avatarEl && profile.picture) {
+                avatarEl.src = profile.picture;
+                avatarEl.classList.remove('hidden');
+            }
+        }
+    } else {
+        disconnectedUI?.classList.remove('hidden');
+        connectedPanel?.classList.add('hidden');
+        connectedPanel?.classList.remove('flex');
+        // Clear profile display
+        ['google-user-name','google-user-email'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '';
+        });
+        const av = document.getElementById('google-user-avatar');
+        if (av) { av.src=''; av.classList.add('hidden'); }
+    }
+}
+
+function showGoogleError(errorCode) {
+    const msgs = {
+        'access_denied': `Access was declined. If you saw an "unverified app" warning, ` +
+            `click Advanced → "Go to mikalainis.com" to proceed — ` +
+            `this is a personal portfolio tool, not a commercial app.`,
+        'immediate_failed':    'Silent sign-in failed. Please click Sign in with Google.',
+        'popup_closed_by_user':'Sign-in popup was closed. Please try again.',
+        'popup_blocked_by_browser': 'Popup was blocked. Allow popups for this site and try again.',
+    };
+    const msg = msgs[errorCode] ||
+        `Google sign-in failed (${errorCode}). Please try again.`;
+    showToast(msg, true);
+
+    // For access_denied show a more detailed inline guide
+    if (errorCode === 'access_denied') {
+        showUnverifiedAppGuide();
+    }
+}
+
+function showUnverifiedAppGuide() {
+    // Remove any existing guide
+    document.getElementById('unverified-guide')?.remove();
+
+    const el = document.createElement('div');
+    el.id = 'unverified-guide';
+    el.className = 'no-print';
+    el.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:99999;max-width:320px;' +
+        'background:#1e293b;color:#e2e8f0;border-radius:12px;padding:16px;' +
+        'box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid #334155;font-size:13px;line-height:1.5;';
+    el.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span style="font-weight:700;color:#fbbf24;">⚠ Unverified App Warning</span>
+            <button type="button" onclick="document.getElementById('unverified-guide').remove()"
+                style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;line-height:1;">×</button>
+        </div>
+        <p style="margin:0 0 10px;color:#cbd5e1;">Google shows this warning because this app hasn't gone through Google's paid verification process. Your data is safe — nothing is stored on any server.</p>
+        <p style="margin:0 0 8px;font-weight:600;color:#e2e8f0;">To proceed:</p>
+        <ol style="margin:0 0 12px;padding-left:18px;color:#94a3b8;display:flex;flex-direction:column;gap:4px;">
+            <li>Click <strong style="color:#e2e8f0;">Sign in with Google</strong> again</li>
+            <li>On the warning screen, click <strong style="color:#e2e8f0;">Advanced</strong></li>
+            <li>Click <strong style="color:#e2e8f0;">"Go to mikalainis.com (unsafe)"</strong></li>
+            <li>Click <strong style="color:#e2e8f0;">Allow</strong></li>
+        </ol>
+        <button type="button" onclick="document.getElementById('unverified-guide').remove();connectGoogle();"
+            style="width:100%;background:#6366f1;color:white;border:none;border-radius:8px;padding:8px;font-weight:600;cursor:pointer;font-size:13px;">
+            Try Again →
+        </button>
+    `;
+    document.body.appendChild(el);
+    // Auto-remove after 30s
+    setTimeout(() => el.remove(), 30000);
+}
+
+// ── Drive Folder Picker ───────────────────────────────────────
+async function openFolderPicker() {
+    if (!googleAccessToken) { showToast('Sign in with Google first.', true); return; }
+    // Build a simple in-page folder browser
+    showFolderPickerModal(null, 'My Drive');
+}
+
+async function showFolderPickerModal(parentId, parentName) {
+    // Remove any existing picker
+    document.getElementById('folder-picker-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'folder-picker-overlay';
+    overlay.className = 'tracker-modal open no-print';
+    overlay.innerHTML = `
+        <div class="tracker-modal-box max-w-md">
+            <div class="px-5 py-4 border-b flex items-center justify-between bg-gray-50">
+                <div class="flex items-center gap-2 min-w-0">
+                    <svg class="w-4 h-4 text-blue-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z"/></svg>
+                    <span class="font-bold text-gray-800 text-sm truncate" id="fp-title">Browse: ${parentName}</span>
+                </div>
+                <button type="button" onclick="document.getElementById('folder-picker-overlay').remove()" class="text-gray-400 hover:text-gray-600 cursor-pointer text-xl font-bold leading-none ml-2">×</button>
+            </div>
+            <div class="p-4 min-h-[220px] max-h-[55vh] overflow-y-auto" id="fp-body">
+                <div class="flex items-center justify-center h-20 text-gray-400 text-sm">
+                    <svg class="w-5 h-5 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    Loading folders...
+                </div>
+            </div>
+            <div class="px-5 py-3 border-t bg-gray-50 flex items-center justify-between gap-3">
+                <button type="button" onclick="clearFolderFilter(); document.getElementById('folder-picker-overlay').remove();" class="text-xs text-gray-500 hover:text-gray-700 cursor-pointer font-medium">Use all of Drive</button>
+                <button type="button" id="fp-select-btn" onclick="selectCurrentFolder('${parentId}','${parentName}')"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold cursor-pointer">
+                    Select "${parentName}"
+                </button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+    // Fetch sub-folders
+    try {
+        const q = parentId
+            ? `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
+            : `'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+
+        const params = new URLSearchParams({ q, fields: 'files(id,name)', orderBy: 'name', pageSize: 50 });
+        const resp = await fetch(
+            `https://www.googleapis.com/drive/v3/files?${params}`,
+            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+        );
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || `HTTP ${resp.status}`);
+        const folders = data.files || [];
+        const body = document.getElementById('fp-body');
+        if (!body) return;
+
+        if (folders.length === 0) {
+            body.innerHTML = '<p class="text-sm text-gray-400 text-center py-6 italic">No sub-folders here.</p>';
+        } else {
+            body.innerHTML = folders.map(f => {
+                const safeName = (f.name || '').replace(/'/g, "\'").replace(/"/g, '&quot;');
+                return `
+                <div class="flex items-center justify-between py-2 px-2 hover:bg-gray-50 rounded-lg group cursor-pointer border-b border-gray-50 last:border-0"
+                    onclick="showFolderPickerModal('${f.id}', decodeURIComponent('${encodeURIComponent(f.name || '')}'))">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <svg class="w-4 h-4 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z"/></svg>
+                        <span class="text-sm text-gray-800 truncate font-medium">${f.name}</span>
+                    </div>
+                    <svg class="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </div>`;
+            }).join('');
+        }
+    } catch(e) {
+        console.error('[FolderPicker] Error:', e);
+        const body = document.getElementById('fp-body');
+        if (body) body.innerHTML = `<p class="text-sm text-red-500 text-center py-6">Error loading folders: ${e.message || 'check console for details'}</p>`;
+    }
+}
+
+function selectCurrentFolder(folderId, folderName) {
+    selectedDriveFolderId   = folderId   || null;
+    selectedDriveFolderName = folderName || null;
+    const nameEl = document.getElementById('drive-folder-name');
+    const clearBtn = document.getElementById('clear-folder-btn');
+    if (nameEl)   nameEl.value = folderName || '';
+    if (clearBtn) clearBtn.classList.toggle('hidden', !folderId);
+    document.getElementById('folder-picker-overlay')?.remove();
+    showToast(`Drive folder set: ${folderName}`);
+    loadDriveFiles();
+}
+
+function clearFolderFilter() {
+    selectedDriveFolderId = null;
+    selectedDriveFolderName = null;
+    const nameEl = document.getElementById('drive-folder-name');
+    const clearBtn = document.getElementById('clear-folder-btn');
+    if (nameEl)   nameEl.value = '';
+    if (clearBtn) clearBtn.classList.add('hidden');
+    loadDriveFiles();
+}
+// ============================================================
+// APPLICATION DATA STORE
+// Seed data pre-loaded from your real Drive + Gmail scan
+// ============================================================
+const APPLICATIONS_FOLDER_ID = '1T0rrDH7IQHmdln0DjKo4Q-yIgqXouyfg'; // Your "Applications" Drive folder
+// Statuses: 'confirmed' | 'in_progress' | 'rejected'
+const SEED_APPLICATIONS = [];
+
+let applications = [];
+let activeFilter = 'all';
+let selectedAppId = null;
+function loadApplications() {
+    try {
+        const saved = getLocalStorageSafe('job_applications');
+        if (saved) {
+            applications = JSON.parse(saved);
+        } else {
+            // First load — seed with real data
+            applications = SEED_APPLICATIONS.map(a => ({ ...a }));
+            saveApplications();
+        }
+    } catch(e) { applications = SEED_APPLICATIONS.map(a => ({ ...a })); }
+}
+
+function saveApplications() {
+    setLocalStorageSafe('job_applications', JSON.stringify(applications));
+}
+
+function genId() { return 'app_' + Date.now() + '_' + Math.random().toString(36).substr(2,5); }
+
+function addApplication(app) {
+    // Normalize strings for matching
+    const norm = s => (s || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+    const companyNorm = norm(app.company);
+    const roleNorm = norm(app.role);
+
+    // Find existing: match company AND (role fuzzy match OR very similar)
+    const exists = applications.find(a => {
+        const aCompanyNorm = norm(a.company);
+        const aRoleNorm = norm(a.role);
+        
+        // Exact company match
+        if (aCompanyNorm === companyNorm || aCompanyNorm.includes(companyNorm) || companyNorm.includes(aCompanyNorm)) {
+            // Role match: one contains the other or they are very similar
+            if (aRoleNorm === roleNorm || aRoleNorm.includes(roleNorm) || roleNorm.includes(aRoleNorm)) {
+                return true;
+            }
+        }
+        return false;
+    });
+
+    // Status upgrade priority: rejected=3 (final) > confirmed=2 > in_progress=1
+    const rank = { rejected:3, confirmed:2, in_progress:1 };
+    
+    if (exists) {
+        // Update existing record
+        const incomingRank = rank[app.status] || 0;
+        const existingRank = rank[exists.status] || 0;
+
+        if (incomingRank >= existingRank) {
+            exists.status = app.status;
+            if (app.nextStep) exists.nextStep = app.nextStep;
+            if (app.rejectionReason) exists.rejectionReason = app.rejectionReason;
+        }
+        
+        // Always append new notes/snippets if not already present
+        if (app.notes && !exists.notes.includes(app.notes)) {
+            exists.notes = (exists.notes + '\n\n' + app.notes).trim();
+        }
+        if (app.link && !exists.link) exists.link = app.link;
+        
+        const newSnippets = (app.rawSnippets || []).filter(s => !(exists.rawSnippets || []).includes(s));
+        exists.rawSnippets = [...(exists.rawSnippets || []), ...newSnippets];
+        
+        exists.updatedAt = new Date().toISOString().slice(0, 10);
+        return false; // was duplicate/updated
+    }
+
+    // New application
+    applications.unshift({
+        id: genId(),
+        date: app.date || new Date().toISOString().slice(0,10),
+        updatedAt: new Date().toISOString().slice(0,10),
+        rawSnippets: [],
+        notes: '',
+        rejectionReason: '',
+        nextStep: '',
+        ...app
+    });
+    return true; // was new
+}
+
+// ============================================================
+// SCAN MODAL + EMAIL SCAN
+// ============================================================
+function openScanModal() {
+    if (!googleAccessToken) { showToast('Please sign in with Google first.', true); return; }
+    document.getElementById('scan-modal').classList.add('open');
+    document.getElementById('scan-log').innerHTML = '<span class="text-gray-500">Waiting to start scan...</span>';
+    document.getElementById('scan-progress-bar').style.width = '0%';
+    document.getElementById('scan-progress-pct').textContent = '0%';
+    document.getElementById('scan-progress-label').textContent = 'Ready';
+    document.getElementById('start-scan-btn').disabled = false;
+    document.getElementById('start-scan-btn').textContent = 'Start Scan';
+    // Init smart preset
+    setTimeout(() => setQueryPreset('smart'), 50);
+}
+
+function closeScanModal() {
+    document.getElementById('scan-modal').classList.remove('open');
+    scanRunning = false;
+}
+
+function scanLog(msg, color='text-green-400') {
+    const el = document.getElementById('scan-log');
+    if (!el) return;
+    el.innerHTML += `
+<span class="${color}">${msg}</span>`;
+    el.scrollTop = el.scrollHeight;
+}
+
+function setScanProgress(pct, label) {
+    document.getElementById('scan-progress-bar').style.width = pct + '%';
+    document.getElementById('scan-progress-pct').textContent = pct + '%';
+    document.getElementById('scan-progress-label').textContent = label;
+}
+
+let scanRunning = false;
+
+async function startEmailScan() {
+    if (scanRunning) return;
+    const apiKey = document.getElementById('global-api-key-input').value.trim();
+    if (!apiKey) { showToast('Please set your Gemini API Key first.', true); return; }
+    if (!googleAccessToken) { showToast('Please sign in with Google first.', true); return; }
+
+    scanRunning = true;
+    document.getElementById('start-scan-btn').disabled = true;
+    document.getElementById('scan-log').innerHTML = '';
+
+    const limit = parseInt(document.getElementById('scan-limit').value);
+    // Use the active preset query, falling back to custom input or default
+    const activeQueryEl = document.getElementById('scan-query-active');
+    const customQueryEl = document.getElementById('scan-query');
+    let query = (activeQueryEl?.value || customQueryEl?.value || '').trim();
+    if (!query) query = SCAN_QUERY_PRESETS.smart;
+
+    // Apply date range filter
+    const dateRange = document.getElementById('scan-date-range')?.value || '30d';
+    const dateFilter = dateRange !== 'all' ? ` newer_than:${dateRange}` : '';
+    const finalQuery = query + dateFilter;
+
+    try {
+        // Preserve existing entries to allow status updates via deduplication
+        scanLog(`🔄 Starting incremental scan (preserving ${applications.length} existing entries)...`,'text-slate-400');
+
+        scanLog(`📧 Searching Gmail for: "${finalQuery.slice(0,80)}${finalQuery.length>80?'...':''}"...`);
+        setScanProgress(5, 'Fetching email list...');
+
+        const gmailListParams = new URLSearchParams({ q: finalQuery, maxResults: limit });
+        const gmailListResp = await fetch(
+            `https://www.googleapis.com/gmail/v1/users/me/messages?${gmailListParams}`,
+            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+        );
+        const gmailListData = await gmailListResp.json();
+        if (!gmailListResp.ok) {
+            if (gmailListResp.status === 401) {
+                clearGoogleSession();
+                setGoogleConnected(false);
+                throw new Error("Google session expired or invalid. Please sign in again.");
+            }
+            throw new Error(gmailListData.error?.message || `HTTP ${gmailListResp.status}`);
+        }
+        const messages = gmailListData.messages || [];
+        scanLog(`Found ${messages.length} emails to analyze.`, 'text-cyan-300');
+
+        if (!messages.length) {
+            scanLog('No emails matched the query.', 'text-yellow-400');
+            scanRunning = false;
+            document.getElementById('start-scan-btn').disabled = false;
+            return;
+        }
+
+        const snippets = [];
+        const batchSize = 10;
+        for (let i = 0; i < messages.length; i += batchSize) {
+            const batch = messages.slice(i, i + batchSize);
+            const pct = Math.round(10 + (i / messages.length) * 40);
+            setScanProgress(pct, `Reading emails ${i+1}–${Math.min(i+batchSize, messages.length)}...`);
+            const fetched = await Promise.all(batch.map(m =>
+                (async () => {
+                    try {
+                        const p = new URLSearchParams({ format:'minimal' });
+                        const r = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}?${p}`, { headers:{ Authorization:`Bearer ${googleAccessToken}` } });
+                        const msg = await r.json();
+                        if (!r.ok) return null;
+                        const headers = msg.payload?.headers || [];
+                        const get = name => (headers.find(h => h.name === name) || {}).value || '';
+                        const receivedDate = msg.internalDate ? new Date(parseInt(msg.internalDate)).toISOString().slice(0,10) : parseEmailDate(get('Date'));
+                        const from = get('From');
+                        const domainMatch = from.match(/@([^>\s]+)/);
+                        const domain = domainMatch ? domainMatch[1] : '';
+                        return { id:m.id, subject:get('Subject'), from, domain, date:receivedDate, link:`https://mail.google.com/mail/u/0/#inbox/${msg.id}`, snippet:msg.snippet||'' };
+                    } catch(e) { return null; }
+                })()
+            ));
+            snippets.push(...fetched.filter(Boolean));
+        }
+
+        scanLog(`✓ Retrieved ${snippets.length} email snippets.`, 'text-green-300');
+        setScanProgress(55, 'Sending to AI for classification...');
+
+        const model = document.getElementById('global-ai-model-input').value.trim() || 'gemini-2.5-flash';
+        const chunkSize = 20;
+        let totalFound = 0;
+
+        for (let i = 0; i < snippets.length; i += chunkSize) {
+            const chunk = snippets.slice(i, i + chunkSize);
+            const pct = Math.round(55 + (i / snippets.length) * 40);
+            setScanProgress(pct, `Classifying emails ${i+1}–${Math.min(i+chunkSize, snippets.length)}...`);
+            scanLog(`🤖 Classifying batch ${Math.ceil(i/chunkSize)+1}...`, 'text-purple-300');
+
+            const emailData = chunk.map((e,idx) =>
+                `[${idx}] Subject:"${e.subject}" | From:"${e.from}" | Domain:"${e.domain}" | Snippet:"${e.snippet}"`
+            ).join('\n');
+
+            const prompt = `Classify these emails as job application updates. For each relevant one, extract:
+- index, company, role, status, nextStep, rejectionReason
+- STATUS must be: "confirmed" (received), "in_progress" (interviewing/action), or "rejected".
+- COMPANY: Carefully identify the hiring company. 
+  - Look for the company name in the sender's display name (e.g., "Uber" in "Uber Recruiting <uber@talent.icims.com>").
+  - If the domain is a recruiting portal (icims.com, workday.com, myworkday.com, successfactors.com, hr.pseg.ns2cloud.com, taleo.net), the company is usually the prefix or part of the subdomain (e.g., "Uber" for icims, "Accenture" for workday, "PSEG" for ns2cloud).
+  - For addresses like jobs@adp.com, donotreply@deloitte.com, citi@myworkday.com, the company is ADP, Deloitte, and Citi respectively.
+  - If the domain is a generic provider like gmail.com, rely on the Subject, From name, and Snippet signatures.
+- ROLE: Extract the job title from the Subject (e.g., "Thank you for your application - [Job Title]").
+- REJECTION: If the snippet contains phrases like "decided to move forward with other candidates", "skills are a closer match", "not selected", "position has been filled", "won't be moving forward", set status to "rejected".
+
+Return ONLY a JSON array of objects. If none qualify, return [].
+
+EMAILS:
+${emailData}`;
+
+            try {
+                const resp = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+                    { method:'POST', headers:{'Content-Type':'application/json'},
+                      body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] }) }
+                );
+                const data = await resp.json();
+                let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+                text = text.replace(/```json|```/g, '').trim();
+                const results = JSON.parse(text);
+
+                results.forEach(r => {
+                    const email = chunk[r.index];
+                    if (!email) return;
+                    const validStatuses = ['confirmed','in_progress','rejected'];
+                    const status = validStatuses.includes(r.status) ? r.status : 'in_progress';
+                    const isNew = addApplication({
+                        company: r.company || 'Unknown',
+                        role: r.role || 'Unknown Role',
+                        status,
+                        nextStep: r.nextStep || '',
+                        rejectionReason: r.rejectionReason || '',
+                        date: email.date || new Date().toISOString().slice(0,10),
+                        link: email.link || '',
+                        source: 'gmail',
+                        rawSnippets: [email.snippet],
+                        notes: `From: ${email.from}\nSubject: ${email.subject}`
+                    });
+                    totalFound++;
+                    const icon  = status === 'confirmed' ? '✓' : status === 'rejected' ? '✗' : '⏳';
+                    const color = status === 'confirmed' ? 'text-green-400' : status === 'rejected' ? 'text-red-400' : 'text-yellow-400';
+                    scanLog(`  ${icon} ${r.company} — ${r.role} [${status}]${isNew ? '' : ' (updated)'}`, color);
+                });
+            } catch(e) {
+                scanLog(`  ⚠ Batch error: ${e.message}`, 'text-yellow-400');
+            }
+        }
+
+        saveApplications();
+        renderDashboard();
+        setScanProgress(100, 'Scan complete!');
+
+        // Summary counts
+        const confirmed  = applications.filter(a => a.status === 'confirmed').length;
+        const inProgress = applications.filter(a => a.status === 'in_progress').length;
+        const rejected   = applications.filter(a => a.status === 'rejected').length;
+        scanLog(`\n📊 Results: ${applications.length} total — ${confirmed} confirmed · ${inProgress} in progress · ${rejected} rejected`, 'text-emerald-300');
+        scanLog(`\n🎉 Done! Found ${totalFound} job application emails.`, 'text-emerald-400');
+        document.getElementById('tracker-last-scan').textContent = 'Last scan: ' + new Date().toLocaleString();
+
+    } catch(e) {
+        scanLog(`❌ Error: ${e.message}`, 'text-red-400');
+        console.error(e);
+    } finally {
+        scanRunning = false;
+        document.getElementById('start-scan-btn').disabled = false;
+    }
+}
+
+// ============================================================
+// ADD MANUALLY MODAL
+// ============================================================
+function openAddModal() {
+    document.getElementById('manual-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('manual-company').value = '';
+    document.getElementById('manual-role').value = '';
+    document.getElementById('manual-notes').value = '';
+    document.getElementById('manual-rejection').value = '';
+    document.getElementById('add-modal').classList.add('open');
+}
+
+function closeAddModal() {
+    document.getElementById('add-modal').classList.remove('open');
+}
+
+function saveManualApp() {
+    const company = document.getElementById('manual-company').value.trim();
+    const role    = document.getElementById('manual-role').value.trim();
+    if (!company || !role) { showToast('Company and Role are required.', true); return; }
+    addApplication({
+        company,
+        role,
+        status: document.getElementById('manual-status').value,
+        nextStep: document.getElementById('manual-notes').value.trim(),
+        rejectionReason: document.getElementById('manual-rejection').value.trim(),
+        date: document.getElementById('manual-date').value || new Date().toISOString().slice(0,10),
+        source: 'manual',
+        rawSnippets: [],
+        notes: document.getElementById('manual-notes').value.trim()
+    });
+    saveApplications();
+    renderDashboard();
+    closeAddModal();
+    showToast('Application added!');
+}
+
+// ============================================================
+// GOOGLE DRIVE FILES
+// ============================================================
+async function loadDriveFiles() {
+    if (!googleAccessToken) { return; }
+    const el = document.getElementById('drive-files-list');
+    if (!el) return;
+    el.innerHTML = '<span class="text-gray-400 italic text-xs animate-pulse">Loading...</span>';
+    try {
+        // Default to Applications folder
+        const targetFolder = selectedDriveFolderId || APPLICATIONS_FOLDER_ID;
+        const driveParams = new URLSearchParams({
+            q: `'${targetFolder}' in parents and trashed=false`,
+            fields: 'files(id,name,modifiedTime,webViewLink,mimeType)',
+            orderBy: 'modifiedTime desc',
+            pageSize: 30
+        });
+        const driveResp = await fetch(
+            `https://www.googleapis.com/drive/v3/files?${driveParams}`,
+            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+        );
+        const driveData = await driveResp.json();
+        if (!driveResp.ok) throw new Error(driveData.error?.message || `HTTP ${driveResp.status}`);
+        const files = driveData.files || [];
+        if (!files.length) {
+            el.innerHTML = '<span class="text-gray-400 italic text-xs">No files found in this folder.</span>';
+            return;
+        }
+
+        // Update the Drive count stat
+        const dcEl = document.getElementById('stat-drive-count');
+        if (dcEl) dcEl.textContent = `${files.length} files in Drive`;
+
+        el.innerHTML = files.map(f => {
+            const isPDF  = f.mimeType === 'application/pdf';
+            const isHTML = f.mimeType === 'text/html';
+            const icon   = isPDF ? '📄' : isHTML ? '🌐' : '📁';
+            const date   = new Date(f.modifiedTime).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            return `
+            <a href="${f.webViewLink}" target="_blank"
+               class="flex items-center gap-2.5 py-2 px-1.5 hover:bg-blue-50 rounded-lg transition-colors group border-b border-gray-50 last:border-0 cursor-pointer">
+                <span class="text-base shrink-0">${icon}</span>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xs font-semibold text-gray-800 truncate group-hover:text-blue-600 leading-tight">${f.name}</div>
+                    <div class="text-[10px] text-gray-400 mt-0.5">${date}</div>
+                </div>
+                <svg class="w-3 h-3 text-gray-300 group-hover:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+            </a>`;
+        }).join('');
+    } catch(e) {
+        el.innerHTML = `<span class="text-red-400 text-xs">Error: ${e.message}</span>`;
+        console.error('Drive load error:', e);
+    }
+}
+
+// ============================================================
+// COVER LETTER COPY
+// ============================================================
+function copyCoverLetter() {
+    const text = document.getElementById('cl-output-text')?.value || '';
+    if (!text) return;
+    navigator.clipboard.writeText(text)
+        .then(() => showToast('Cover letter copied to clipboard!'))
+        .catch(() => {
+            // Fallback for browsers that block clipboard
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showToast('Copied!');
+        });
+}
+
+
+
+// ============================================================
+// DATE PARSING UTILITY
+// ============================================================
+function parseEmailDate(rawDate) {
+    // Handles all Gmail Date header formats:
+    // RFC 2822: "Wed, 20 May 2026 15:16:35 +0000"
+    // RFC 2822 no weekday: "20 May 2026 15:16:35 +0000"
+    // ISO: "2026-05-20T15:16:35Z"
+    // Already ISO date: "2026-05-20"
+    if (!rawDate) return new Date().toISOString().slice(0,10);
+
+    // Already ISO date (YYYY-MM-DD)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate.trim())) return rawDate.trim();
+
+    // Try native Date parse (handles RFC 2822 and ISO)
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+        return d.toISOString().slice(0,10);
+    }
+
+    // Handle ISO datetime strings like "2026-05-20T15:16:35Z"
+    const isoMatch = rawDate.match(/^(\d{4}-\d{2}-\d{2})T/);
+    if (isoMatch) return isoMatch[1];
+
+    // Manual RFC 2822 parse as fallback
+    // e.g. "Wed, 20 May 2026 15:16:35 +0000" or "20 May 2026 15:16:35 +0000"
+    const months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+    const m = rawDate.match(/(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/);
+    if (m) {
+        const day   = m[1].padStart(2,'0');
+        const month = String((months[m[2].toLowerCase()] || 0) + 1).padStart(2,'0');
+        const year  = m[3];
+        return `${year}-${month}-${day}`;
+    }
+
+    // Last resort — today
+    return new Date().toISOString().slice(0,10);
+}
+
+// ============================================================
+// SCAN QUERY PRESETS
+// ============================================================
+// Job email filter — excludes only clear noise (promotions, social, spam)
+// NOTE: intentionally does NOT exclude Updates or require in:inbox
+// because ATS systems (Workday, Greenhouse etc.) often land in Updates tab
+// and many job emails get archived — we want to find ALL of them
+const PRIMARY_INBOX = "-category:promotions -category:social -in:spam -in:trash";
+
+const SCAN_QUERY_PRESETS = {
+    smart: `${PRIMARY_INBOX} ((from:myworkday.com OR from:greenhouse.io OR from:lever.co OR from:taleo.net OR from:adp.com OR from:icims.com OR from:smartrecruiters.com OR from:jobvite.com OR from:successfactors.com OR from:brassring.com OR from:candidatecare.com OR from:indeedapply.com OR from:linkedin.com OR from:indeed.com OR from:ziprecruiter.com) OR (subject:("thank you for applying") OR subject:("your application") OR subject:("application received") OR subject:("application for") OR subject:("we received your application") OR subject:("application update") OR subject:("interview") OR subject:("job offer") OR subject:("offer letter") OR subject:("unfortunately") OR subject:("not moving forward") OR subject:("position has been filled") OR subject:("other candidates") OR subject:("decided to move forward") OR subject:("not selected")))`,
+
+    confirmations: `${PRIMARY_INBOX} (subject:("thank you for applying") OR subject:("application received") OR subject:("we received your application") OR subject:("your application for") OR subject:("successfully received") OR subject:("application submitted"))`,
+
+    rejections: `${PRIMARY_INBOX} (subject:("unfortunately") OR subject:("not moving forward") OR subject:("other candidates") OR subject:("position has been filled") OR subject:("not selected") OR subject:("decided to move forward") OR subject:("skills are a closer match") OR subject:("not a match") OR subject:("application update"))`,
+
+    interviews: `${PRIMARY_INBOX} (subject:("interview") OR subject:("next steps") OR subject:("phone screen") OR subject:("technical screen") OR subject:("assessment") OR subject:("hiring manager") OR subject:("schedule a") OR subject:("onsite") OR subject:("virtual interview") OR subject:("coding challenge"))`,
+
+    custom: ''
+};
+
+function setQueryPreset(preset) {
+    // Update button styles
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        const isActive = btn.dataset.preset === preset;
+        btn.className = 'preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors ' +
+            (isActive ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400') +
+            (btn.dataset.preset === 'custom' ? ' col-span-2' : '');
+    });
+
+    const customRow = document.getElementById('custom-query-row');
+    const previewText = document.getElementById('query-preview-text');
+    const activeInput = document.getElementById('scan-query-active');
+
+    if (preset === 'custom') {
+        customRow?.classList.remove('hidden');
+        const customVal = document.getElementById('scan-query')?.value || '';
+        if (previewText) previewText.textContent = customVal || 'Type your query above';
+        if (activeInput) activeInput.value = customVal;
+    } else {
+        customRow?.classList.add('hidden');
+        const q = SCAN_QUERY_PRESETS[preset] || SCAN_QUERY_PRESETS.smart;
+        if (previewText) previewText.textContent = q;
+        if (activeInput) activeInput.value = q;
+    }
+}
+
+// Init preset on modal open
+function initScanModal() {
+    setQueryPreset('smart');
+}
+
+// ============================================================
+// DASHBOARD RENDER
+// ============================================================
+function setFilter(f) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        const isActive = btn.dataset.filter === f;
+        const colorMap = {
+            confirmed: isActive ? 'bg-blue-600 text-white border-blue-600'   : 'bg-white text-blue-600 border-blue-200 hover:border-blue-400',
+            in_progress: isActive ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-amber-600 border-amber-200 hover:border-amber-400',
+            rejected: isActive ? 'bg-red-600 text-white border-red-600'     : 'bg-white text-red-600 border-red-200 hover:border-red-400',
+            all: isActive ? 'bg-gray-900 text-white border-gray-900'         : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400',
+        };
+        btn.className = 'filter-btn px-3 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer ' +
+            (colorMap[btn.dataset.filter] || colorMap.all);
+    });
+    renderTable();
+}
+
+function renderDashboard() {
+    const stats = { total: applications.length, confirmed: 0, in_progress: 0, rejected: 0 };
+    applications.forEach(a => {
+        if      (a.status === 'confirmed')   stats.confirmed++;
+        else if (a.status === 'rejected')    stats.rejected++;
+        else                                  stats.in_progress++; // in_progress + any legacy statuses
+    });

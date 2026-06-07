@@ -1,0 +1,836 @@
+
+    document.getElementById('stat-total').textContent     = stats.total;
+    document.getElementById('stat-confirmed').textContent  = stats.confirmed;
+    document.getElementById('stat-in_progress').textContent = stats.in_progress;
+    document.getElementById('stat-rejected').textContent   = stats.rejected;
+
+    // Drive count hint
+    const driveCount = applications.filter(a => a.source === 'drive').length;
+    const dc = document.getElementById('stat-drive-count');
+    if (dc) dc.textContent = driveCount > 0 ? `${driveCount} from Drive` : '';
+
+    renderFunnel(stats);
+    renderTable();
+}
+
+function renderFunnel(stats) {
+    const el = document.getElementById('funnel-container');
+    if (stats.total === 0) {
+        el.innerHTML = '<div class="empty-state py-6"><p class="text-sm text-gray-400">No data yet</p></div>';
+        return;
+    }
+    const steps = [
+        { label:'Applied',     count: stats.total,       color:'bg-slate-400',  pct: 100 },
+        { label:'Confirmed',   count: stats.confirmed,   color:'bg-blue-400',   pct: stats.total ? Math.round(stats.confirmed/stats.total*100)   : 0 },
+        { label:'In Progress', count: stats.in_progress, color:'bg-amber-400',  pct: stats.total ? Math.round(stats.in_progress/stats.total*100) : 0 },
+        { label:'Rejected',    count: stats.rejected,    color:'bg-red-400',    pct: stats.total ? Math.round(stats.rejected/stats.total*100)    : 0 },
+    ];
+    el.innerHTML = steps.map(s => `
+        <div class="funnel-step">
+            <span class="funnel-label">${s.label}</span>
+            <div class="funnel-bar-wrap">
+                <div class="progress-bar">
+                    <div class="progress-fill ${s.color}" style="width:${s.pct}%"></div>
+                </div>
+            </div>
+            <span class="funnel-count">${s.count}</span>
+        </div>
+    `).join('');
+}
+
+function renderTable() {
+    const search = (document.getElementById('search-input')?.value || '').toLowerCase();
+    const el = document.getElementById('app-table-body');
+
+    let filtered = applications.filter(a => {
+        // Normalise legacy statuses for filtering
+        const normStatus = ['confirmed','in_progress','rejected'].includes(a.status)
+            ? a.status
+            : (a.status === 'rejected' ? 'rejected' : (a.status === 'confirmed' || a.status === 'applied' || a.status === 'offer' ? 'confirmed' : 'in_progress'));
+        const matchFilter = activeFilter === 'all' || normStatus === activeFilter;
+        const matchSearch = !search ||
+            a.company.toLowerCase().includes(search) ||
+            a.role.toLowerCase().includes(search) ||
+            (a.notes||'').toLowerCase().includes(search);
+        return matchFilter && matchSearch;
+    });
+
+    if (filtered.length === 0) {
+        el.innerHTML = `<div class="empty-state"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><p class="font-semibold text-gray-400 mt-2">No results found</p></div>`;
+        return;
+    }
+
+    const statusBadge = (s) => {
+        const map = {
+            confirmed:   'badge-applied Confirmed',
+            in_progress: 'badge-interview In Progress',
+            rejected:    'badge-rejected Rejected',
+            // legacy statuses mapped to new ones
+            applied:  'badge-applied Confirmed',
+            interview:'badge-interview In Progress',
+            offer:    'badge-offer Offer',
+            pending:  'badge-pending Pending',
+            ghosted:  'badge-ghosted Ghosted',
+        };
+        const parts = (map[s]||'badge-pending Unknown').split(' ');
+        return `<span class="status-badge ${parts[0]}">${parts.slice(1).join(' ')}</span>`;
+    };
+
+    el.innerHTML = filtered.map(a => `
+        <div class="app-row cursor-pointer ${selectedAppId === a.id ? 'bg-indigo-50' : ''}" onclick="selectApp('${a.id}')">
+            <div class="min-w-0">
+                <div class="font-semibold text-gray-900 truncate">${escHtml(a.company)}</div>
+                <div class="text-xs text-gray-500 truncate">${escHtml(a.role)}</div>
+            </div>
+            <div class="text-gray-500 text-xs font-mono flex flex-col items-start gap-0.5">
+                <span>${a.date || '—'}</span>
+            </div>
+            <div>${statusBadge(a.status)}</div>
+            <div class="text-xs text-gray-600 truncate">${escHtml(a.nextStep || '—')}</div>
+            <button type="button" onclick="event.stopPropagation(); deleteApp('${a.id}')" class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="Delete">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+function selectApp(id) {
+    selectedAppId = id;
+    const app = applications.find(a => a.id === id);
+    if (!app) return;
+    renderTable();
+    const el = document.getElementById('detail-panel');
+    el.innerHTML = `
+        <div class="space-y-3">
+            <div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Company</div><div class="font-bold text-gray-900 mt-0.5">${escHtml(app.company)}</div></div>
+            <div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Role</div><div class="text-gray-700 mt-0.5">${escHtml(app.role)}</div></div>
+            <div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Applied</div><div class="text-gray-700 font-mono text-xs mt-0.5">${app.date||'—'}</div></div>
+            <div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Source</div><div class="text-gray-500 text-xs mt-0.5 capitalize">${app.source||'manual'}</div></div>
+            ${app.link ? `<div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Email</div>
+                <a href="${app.link}" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs mt-0.5 flex items-center gap-1 font-medium">
+                    <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Open in Gmail
+                </a></div>` : ''}
+            ${app.nextStep ? `<div><div class="text-xs font-bold text-amber-600 uppercase tracking-wider">Next Step</div><div class="text-gray-700 mt-0.5 text-sm">${escHtml(app.nextStep)}</div></div>` : ''}
+            ${app.rejectionReason ? `<div><div class="text-xs font-bold text-red-500 uppercase tracking-wider">Rejection Reason</div><div class="text-gray-700 mt-0.5 text-sm">${escHtml(app.rejectionReason)}</div></div>` : ''}
+            ${app.notes ? `<div><div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Notes</div><div class="text-gray-500 text-xs mt-0.5 whitespace-pre-line">${escHtml(app.notes)}</div></div>` : ''}
+            <div class="pt-2 border-t border-gray-100">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Update Status</label>
+                <select onchange="updateAppStatus('${app.id}', this.value)" class="mt-1 w-full border border-gray-200 rounded-lg p-2 text-sm outline-none">
+                    ${[['confirmed','Confirmed'],['in_progress','In Progress'],['rejected','Rejected']].map(([v,l]) => `<option value="${v}" ${app.status===v?'selected':''}>${l}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+    `;
+}
+
+function updateAppStatus(id, status) {
+    const app = applications.find(a => a.id === id);
+    if (app) { app.status = status; saveApplications(); renderDashboard(); }
+}
+
+function deleteApp(id) {
+    if (!confirm('Remove this application?')) return;
+    applications = applications.filter(a => a.id !== id);
+    if (selectedAppId === id) { selectedAppId = null; document.getElementById('detail-panel').innerHTML = '<p class="italic text-gray-400 text-sm">Click a row to see details.</p>'; }
+    saveApplications();
+    renderDashboard();
+}
+
+function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// VIEW TOGGLE (extended for tracker)
+// ============================================================
+function toggleView(view) {
+    const resumeView = document.getElementById('resume-main-container');
+    const cardView = document.getElementById('talent-card-view');
+    const trackerView = document.getElementById('tracker-view');
+    const btnGen = document.getElementById('btn-generate-tc');
+    const btnBack = document.getElementById('btn-show-resume');
+    const btnTracker = document.getElementById('btn-show-tracker');
+    const printStyle = document.getElementById('print-page-style');
+
+    // Hide all
+    [resumeView, cardView, trackerView].forEach(v => v?.classList.add('hidden'));
+    // Reset buttons
+    [btnGen, btnBack, btnTracker].forEach(b => b?.classList.remove('hidden'));
+
+    if (view === 'talent-card') {
+        cardView?.classList.remove('hidden');
+        btnGen?.classList.add('hidden');
+        btnBack?.classList.remove('hidden');
+        printStyle.innerHTML = '@media print { @page { size: letter landscape; margin: 0.25in; } }';
+    } else if (view === 'tracker') {
+        trackerView?.classList.remove('hidden');
+        btnTracker?.classList.add('hidden');
+        btnBack?.classList.remove('hidden');
+        printStyle.innerHTML = '@media print { @page { size: letter portrait; margin: 0.5in; } }';
+        renderDashboard();
+    } else {
+        resumeView?.classList.remove('hidden');
+        btnBack?.classList.add('hidden');
+        printStyle.innerHTML = '@media print { @page { size: letter portrait; margin: 0.5in; } }';
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// ============================================================
+// ALL ORIGINAL RESUME BUILDER FUNCTIONS (preserved)
+// ============================================================
+let undoStack = [];
+let draggedSkill = null;
+
+
+// ============================================================
+// FETCH LIVE GEMINI MODELS
+// ============================================================
+async function fetchGeminiModels(silent = false) {
+    const apiKey = document.getElementById('global-api-key-input')?.value?.trim();
+    if (!apiKey) { showToast('Enter your Gemini API Key first.', true); return; }
+
+    const btn = document.getElementById('refresh-models-btn');
+    if (btn && !silent) btn.textContent = '↻ Loading...';
+
+    try {
+        const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models?pageSize=50&key=${apiKey}`
+        );
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || `HTTP ${resp.status}`);
+
+        // Filter to text-generation capable models only, exclude audio/video/embedding/tts
+        const exclude = ['embedding', 'tts', 'speech', 'audio', 'video', 'image', 'vision', 'aqa', 'retrieval'];
+        const models = (data.models || [])
+            .filter(m => {
+                const name = m.name.toLowerCase();
+                const desc = (m.description || '').toLowerCase();
+                // Must support generateContent
+                const supportsGenerate = (m.supportedGenerationMethods || []).includes('generateContent');
+                // Exclude non-text models
+                const isExcluded = exclude.some(e => name.includes(e) || desc.includes(e));
+                return supportsGenerate && !isExcluded;
+            })
+            .map(m => ({
+                id: m.name.replace('models/', ''),
+                display: m.displayName || m.name.replace('models/', ''),
+                description: m.description || ''
+            }))
+            .sort((a, b) => {
+                // Sort: gemini-3 first, then 2.5, then others
+                const rank = id => id.startsWith('gemini-3') ? 0 : id.startsWith('gemini-2.5') ? 1 : 2;
+                return rank(a.id) - rank(b.id) || a.id.localeCompare(b.id);
+            });
+
+        if (!models.length) {
+            showToast('No text models found for this API key.', true);
+            return;
+        }
+
+        const sel = document.getElementById('global-ai-model-input');
+        if (!sel) return;
+
+        const currentVal = sel.value;
+
+        // Rebuild options grouped by series
+        sel.innerHTML = '';
+        const groups = {
+            'Gemini 3': models.filter(m => m.id.startsWith('gemini-3')),
+            'Gemini 2.5': models.filter(m => m.id.startsWith('gemini-2.5')),
+            'Other': models.filter(m => !m.id.startsWith('gemini-3') && !m.id.startsWith('gemini-2.5')),
+        };
+
+        for (const [groupName, groupModels] of Object.entries(groups)) {
+            if (!groupModels.length) continue;
+            const og = document.createElement('optgroup');
+            og.label = `── ${groupName} ──`;
+            groupModels.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                // Add helpful suffix hints
+                const hint = m.id.includes('flash-lite') ? ' — budget' :
+                             m.id.includes('flash') ? ' — fast' :
+                             m.id.includes('pro') ? ' — powerful' : '';
+                opt.textContent = m.id + hint;
+                og.appendChild(opt);
+            });
+            sel.appendChild(og);
+        }
+
+        // Restore selection or default to gemini-2.5-flash
+        const preferred = currentVal || 'gemini-2.5-flash';
+        const exists = Array.from(sel.options).some(o => o.value === preferred);
+        sel.value = exists ? preferred : sel.options[0]?.value;
+        setLocalStorageSafe('gemini_model', sel.value);
+
+        if (!silent) showToast(`Loaded ${models.length} models`);
+    } catch(e) {
+        showToast('Failed to load models: ' + e.message, true);
+        console.error('[Models]', e);
+    } finally {
+        if (btn) btn.textContent = '↻ Refresh';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initAuth();
+    // Restore Gemini settings
+    const savedKey = getLocalStorageSafe('gemini_api_key');
+    if (savedKey) document.getElementById('global-api-key-input').value = savedKey;
+    const savedModel = getLocalStorageSafe('gemini_model');
+    if (savedModel) {
+        const sel = document.getElementById('global-ai-model-input');
+        if (sel) {
+            // Try to select saved model; if not in list add it
+            const exists = Array.from(sel.options).some(o => o.value === savedModel);
+            if (!exists) {
+                const opt = document.createElement('option');
+                opt.value = savedModel;
+                opt.textContent = savedModel + ' (saved)';
+                sel.appendChild(opt);
+            }
+            sel.value = savedModel;
+        }
+    }
+
+    // Auto-fetch latest models on every page load if API key is available
+    if (savedKey) {
+        // Small delay so the dropdown renders first
+        setTimeout(() => fetchGeminiModels(true), 500);
+    }
+
+    // Pre-populate Google profile display if a session was saved
+    const savedProfile = getLocalStorageSafe('google_user_profile');
+    if (savedProfile) {
+        try {
+            const p = JSON.parse(savedProfile);
+            // setGoogleConnected is called later by initGoogleApi on token verify,
+            // but we eagerly show the name/avatar to avoid UI flash
+            const nameEl  = document.getElementById('google-user-name');
+            const emailEl = document.getElementById('google-user-email');
+            const avEl    = document.getElementById('google-user-avatar');
+            if (nameEl  && p.name)    nameEl.textContent  = p.name;
+            if (emailEl && p.email)   emailEl.textContent = p.email;
+            if (avEl && p.picture)   { avEl.src = p.picture; avEl.classList.remove('hidden'); }
+        } catch(e) {}
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    loadApplications();
+
+    // Start polling for Google API libraries to become ready
+    initGoogleLibraries();
+});
+
+function getLocalStorageSafe(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+function setLocalStorageSafe(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+
+function showToast(message, isError=false) {
+    const t = document.createElement('div');
+    t.className = `fixed bottom-4 right-4 text-white px-6 py-3 rounded shadow-xl z-[99999] transition-opacity duration-300 font-semibold no-print ${isError ? 'bg-red-600' : 'bg-gray-900'}`;
+    t.innerText = message;
+    document.body.appendChild(t);
+    setTimeout(() => { t.classList.add('opacity-0'); setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+function updateUndoButton() {
+    const btn = document.getElementById('undo-btn');
+    if (!btn) return;
+    if (undoStack.length > 0) { btn.disabled = false; btn.classList.remove('opacity-50','cursor-not-allowed'); }
+    else { btn.disabled = true; btn.classList.add('opacity-50','cursor-not-allowed'); }
+}
+
+function saveState() {
+    try {
+        const active = document.querySelector('main:not(.hidden)');
+        if (!active || active.id === 'tracker-view') return;
+        undoStack.push({ id: active.id, html: active.innerHTML });
+        if (undoStack.length > 50) undoStack.shift();
+        updateUndoButton();
+    } catch(e) {}
+}
+
+function undo() {
+    if (undoStack.length > 0) {
+        const prev = undoStack.pop();
+        const c = document.getElementById(prev.id);
+        if (c) c.innerHTML = prev.html;
+        updateUndoButton();
+        checkPendingSuggestions();
+    }
+}
+
+document.addEventListener('focusin', e => { if (e.target?.isContentEditable) saveState(); });
+
+function removeElement(el) { try { saveState(); if(el) { el.remove(); checkPendingSuggestions(); } } catch(e) {} }
+
+function togglePageBreak(el) { 
+    try { 
+        saveState(); 
+        if(el) {
+            el.classList.toggle('page-break-before'); 
+            // Also ensure it's visible in edit mode if it's a standalone break
+            if (el.classList.contains('standalone-page-break')) {
+                el.classList.toggle('opacity-50');
+            }
+        }
+    } catch(e) {} 
+}
+
+function addStandalonePageBreak() {
+    try {
+        saveState();
+        const active = document.querySelector('main:not(.hidden)');
+        if(!active || active.id==='tracker-view') return;
+        const el = document.createElement('div');
+        el.className = 'page-break-before standalone-page-break my-8 border-t-2 border-dashed border-blue-300 relative group no-print flex items-center justify-center';
+        el.innerHTML = `
+            <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded absolute -top-2.5 uppercase tracking-wider">Page Break</span>
+            <div class="absolute -top-3 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                <button type="button" onclick="moveSectionUp(this.closest('.standalone-page-break'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑</button>
+                <button type="button" onclick="moveSectionDown(this.closest('.standalone-page-break'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓</button>
+                <button type="button" onclick="removeElement(this.closest('.standalone-page-break'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button>
+            </div>
+        `;
+        active.appendChild(el);
+        showToast('Page break added!');
+    } catch(e) {}
+}
+
+function clearAllPageBreaks() {
+    try {
+        saveState();
+        const breaks = document.querySelectorAll('.page-break-before');
+        breaks.forEach(el => {
+            if (el.classList.contains('standalone-page-break')) {
+                el.remove();
+            } else {
+                el.classList.remove('page-break-before');
+            }
+        });
+        showToast('All page breaks cleared.');
+    } catch(e) {}
+}
+
+function moveSectionUp(section) {
+    try {
+        saveState();
+        const prev = section.previousElementSibling;
+        if (prev && (prev.tagName.toLowerCase() === 'section' || prev.classList.contains('standalone-page-break')))
+            section.parentNode.insertBefore(section, prev);
+    } catch(e) {}
+}
+
+function moveSectionDown(section) {
+    try {
+        saveState();
+        const next = section.nextElementSibling;
+        if (next && (next.tagName.toLowerCase() === 'section' || next.classList.contains('standalone-page-break')))
+            section.parentNode.insertBefore(next, section);
+    } catch(e) {}
+}
+
+function moveExperienceUp(item) {
+    try {
+        saveState();
+        const prev = item.previousElementSibling;
+        if (prev && prev.classList.contains('relative'))
+            item.parentNode.insertBefore(item, prev);
+    } catch(e) {}
+}
+
+function moveExperienceDown(item) {
+    try {
+        saveState();
+        const next = item.nextElementSibling;
+        if (next && next.classList.contains('relative'))
+            item.parentNode.insertBefore(next, item);
+    } catch(e) {}
+}
+
+function getActiveContainer(idStr) {
+    const active = document.querySelector('main:not(.hidden)');
+    if (active) { const c = active.querySelector(`[id="${idStr}"]`); if (c) return c; }
+    return document.getElementById(idStr);
+}
+
+function handleImageUpload(event) {
+    try {
+        const file = event.target.files[0];
+        if (!file) return;
+        saveState();
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let [w,h] = [img.width, img.height];
+                const MAX = 300;
+                if (w > h) { if (w>MAX) { h*=MAX/w; w=MAX; } } else { if (h>MAX) { w*=MAX/h; h=MAX; } }
+                canvas.width=w; canvas.height=h;
+                canvas.getContext('2d').drawImage(img,0,0,w,h);
+                const b64 = canvas.toDataURL('image/jpeg',0.8);
+                const i1 = document.getElementById('profile-img');
+                const i2 = document.getElementById('tc-profileImage');
+                if(i1) i1.src=b64; if(i2) i2.src=b64;
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value='';
+    } catch(e) { showToast('Could not process image.',true); }
+}
+
+function importHTML(event) {
+    try {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const doc = new DOMParser().parseFromString(e.target.result,'text/html');
+                const newResume = doc.getElementById('resume-main-container') || doc.querySelector('main');
+                if (newResume) {
+                    saveState();
+                    document.getElementById('resume-main-container').innerHTML = newResume.innerHTML;
+                    const nc = doc.getElementById('talent-card-view');
+                    const cc = document.getElementById('talent-card-view');
+                    if (nc && cc) cc.innerHTML = nc.innerHTML;
+                    showToast('Resume loaded!');
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                } else { showToast('Invalid file.',true); }
+            } catch(err) { showToast('Failed to process HTML.',true); }
+            finally { event.target.value=''; }
+        };
+        reader.readAsText(file);
+    } catch(e) { showToast('Failed to load file.',true); }
+}
+
+async function downloadHTML() {
+    try {
+        const blob = new Blob(["<!DOCTYPE html>\n" + document.documentElement.outerHTML], {type:'text/html'});
+        if (window.showSaveFilePicker) {
+            const h = await window.showSaveFilePicker({suggestedName:'Resume_Interactive.html',types:[{description:'HTML File',accept:{'text/html':['.html']}}]});
+            const w = await h.createWritable(); await w.write(blob); await w.close();
+            showToast('HTML saved!');
+        } else {
+            const url = URL.createObjectURL(blob);
+            const a = Object.assign(document.createElement('a'),{href:url,download:'Resume_Interactive.html'});
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            showToast('HTML downloaded!');
+        }
+    } catch(e) { if(e.name!=='AbortError') showToast('Failed to save.',true); }
+}
+
+function addContact() {
+    try {
+        saveState();
+        const c = getActiveContainer('contact-container');
+        if(!c) return;
+        const el = document.createElement('div');
+        el.className = 'flex items-center relative group pr-4';
+        el.innerHTML = `<svg class="w-4 h-4 mr-1 text-gray-400 shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg><span contenteditable="true" class="outline-none">New Info</span><button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-1 -right-1 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 z-10 shadow no-print cursor-pointer">×</button>`;
+        c.appendChild(el); el.querySelector('span').focus();
+    } catch(e) {}
+}
+
+function addSkill() {
+    try {
+        saveState();
+        const c = getActiveContainer('skills-container') || getActiveContainer('tc-skills-container');
+        if(!c) return;
+        const el = document.createElement('span');
+        el.draggable=true; el.ondragstart=dragStart; el.ondragover=dragOver; el.ondragend=dragEnd;
+        el.className='bg-gray-100 border border-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium relative group flex items-center cursor-move';
+        el.innerHTML=`<svg class="w-3 h-3 mr-1.5 text-gray-400 opacity-0 group-hover:opacity-100 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg><span contenteditable="true" class="outline-none min-w-[20px] cursor-text" onmousedown="event.stopPropagation()">New Skill</span><button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 z-10 shadow no-print cursor-pointer">×</button>`;
+        c.appendChild(el); el.querySelector('span[contenteditable]').focus();
+    } catch(e) {}
+}
+
+function addExperience() {
+    try {
+        saveState();
+        const c = getActiveContainer('experience-container');
+        if(!c) return;
+        const el = document.createElement('div');
+        el.className='mb-6 relative group border border-transparent hover:border-gray-100 rounded p-4 -mx-4 transition-colors';
+        el.innerHTML=`
+            <div class="absolute -top-3 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print z-20">
+                <button type="button" contenteditable="false" onclick="moveExperienceUp(this.closest('.relative.group'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑ Up</button>
+                <button type="button" contenteditable="false" onclick="moveExperienceDown(this.closest('.relative.group'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓ Down</button>
+                <button type="button" contenteditable="false" onclick="togglePageBreak(this.closest('.relative.group'))" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">Page Break</button>
+                <button type="button" contenteditable="false" onclick="removeElement(this.closest('.relative.group'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button>
+            </div>
+            <div class="mb-1"><h3 class="text-lg font-bold text-gray-900"><span contenteditable="true">Company Name</span> <span class="text-gray-500 font-normal text-sm">| <span contenteditable="true">Location</span></span></h3></div><div class="flex justify-between items-baseline mb-2"><h4 contenteditable="true" class="text-md font-semibold text-gray-800 italic inline-block">Job Title</h4><span contenteditable="true" class="text-sm font-semibold text-gray-600">Month Year – Present</span></div><ul class="list-disc list-outside ml-5 text-sm text-gray-700 space-y-2 mt-2"><li class="relative group/bullet pr-6"><span contenteditable="true" class="block outline-none">Description of responsibility or achievement.</span><button type="button" contenteditable="false" onclick="removeElement(this.closest('li'))" class="absolute top-0.5 right-0 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover/bullet:opacity-100 z-10 shadow no-print cursor-pointer">×</button></li><li class="relative group/bullet pr-6 no-print helper-bullet"><span contenteditable="false" class="block outline-none cursor-pointer text-blue-500 italic text-xs" onclick="addBullet(this)">+ Add bullet...</span></li></ul>`;
+        c.insertBefore(el, c.firstChild);
+    } catch(e) {}
+}
+
+function addBullet(element) {
+    try {
+        saveState();
+        const c = element.parentElement.parentElement;
+        const el = document.createElement('li');
+        el.className='relative group/bullet pr-6';
+        el.innerHTML=`<span contenteditable="true" class="block outline-none">New responsibility.</span><button type="button" contenteditable="false" onclick="removeElement(this.closest('li'))" class="absolute top-0.5 right-0 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover/bullet:opacity-100 z-10 shadow no-print cursor-pointer">×</button>`;
+        c.insertBefore(el, element.parentElement); el.querySelector('span').focus();
+    } catch(e) {}
+}
+
+function addEducation() {
+    try {
+        saveState();
+        const c = getActiveContainer('education-container');
+        if(!c) return;
+        const el = document.createElement('div');
+        el.className='relative group p-2 -m-2 border border-transparent hover:border-gray-100 rounded transition-colors';
+        el.innerHTML=`<div class="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 z-10 no-print"><button type="button" contenteditable="false" onclick="removeElement(this.closest('.relative.group'))" class="bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow cursor-pointer">×</button></div><h3 contenteditable="true" class="text-md font-bold text-gray-900 inline-block pr-12">New Degree</h3><p contenteditable="true" class="text-sm text-gray-700 mt-1">University Name | Location</p>`;
+        c.appendChild(el); el.querySelector('h3').focus();
+    } catch(e) {}
+}
+
+function addCustomSection() {
+    try {
+        saveState();
+        const active = document.querySelector('main:not(.hidden)');
+        if(!active || active.id==='tracker-view') return;
+        const el = document.createElement('section');
+        el.className='mb-8 group/section transition-all relative';
+        el.innerHTML=`<div class="absolute -top-4 right-0 flex gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity no-print z-20"><button type="button" contenteditable="false" onclick="moveSectionUp(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑ Up</button><button type="button" contenteditable="false" onclick="moveSectionDown(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓ Down</button><button type="button" contenteditable="false" onclick="togglePageBreak(this.closest('section'))" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">Page Break</button><button type="button" contenteditable="false" onclick="removeElement(this.closest('section'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button></div><div class="flex items-center gap-3 border-b border-gray-300 pb-1 mb-3"><h2 contenteditable="true" class="text-xl font-bold text-blue-800 uppercase tracking-wider inline-block">New Section</h2></div><p contenteditable="true" class="text-gray-700 leading-relaxed text-sm min-h-[40px]">Add your content here...</p>`;
+        active.appendChild(el); el.querySelector('h2').focus();
+    } catch(e) {}
+}
+
+function dragStart(e) { draggedSkill=e.currentTarget; setTimeout(()=>e.currentTarget.classList.add('opacity-50'),0); }
+function dragEnd(e) { e.currentTarget.classList.remove('opacity-50'); draggedSkill=null; saveState(); }
+function dragOver(e) {
+    e.preventDefault();
+    const t = e.target.closest('span[draggable="true"]');
+    if (t && t!==draggedSkill && draggedSkill?.parentElement===t.parentElement) {
+        const r = t.getBoundingClientRect();
+        if (e.clientX > r.left+r.width/2) t.after(draggedSkill); else t.before(draggedSkill);
+    }
+}
+
+async function fetchWithRetry(url, options, maxRetries=5) {
+    let delay=1000;
+    for (let i=0; i<maxRetries; i++) {
+        try {
+            const r = await fetch(url,options);
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error?.message||`HTTP ${r.status}`);
+            return d;
+        } catch(err) {
+            if(i===maxRetries-1) throw err;
+            await new Promise(res=>setTimeout(res,delay)); delay*=2;
+        }
+    }
+}
+
+// AI Modal helpers
+function openAiImportModal() { document.getElementById('ai-import-modal').classList.remove('hidden'); document.getElementById('ai-import-modal').classList.add('flex'); }
+function closeAiImportModal() { document.getElementById('ai-import-modal').classList.add('hidden'); document.getElementById('ai-import-modal').classList.remove('flex'); document.getElementById('ai-import-error-msg').classList.add('hidden'); document.getElementById('process-import-btn').classList.remove('hidden'); document.getElementById('resume-file-input').disabled=false; }
+function openAiModal() { document.getElementById('ai-modal').classList.remove('hidden'); document.getElementById('ai-modal').classList.add('flex'); document.getElementById('job-description-input').focus(); }
+function closeAiModal() { document.getElementById('ai-modal').classList.add('hidden'); document.getElementById('ai-modal').classList.remove('flex'); document.getElementById('ai-error-msg').classList.add('hidden'); document.getElementById('generate-ai-btn').classList.remove('hidden'); document.getElementById('job-description-input').disabled=false; }
+function openCoverLetterModal() { document.getElementById('cover-letter-modal').classList.remove('hidden'); document.getElementById('cover-letter-modal').classList.add('flex'); }
+function closeCoverLetterModal() { document.getElementById('cover-letter-modal').classList.add('hidden'); document.getElementById('cover-letter-modal').classList.remove('flex'); }
+
+function processResumeImport() {
+    const apiKey=document.getElementById('global-api-key-input').value.trim();
+    const model=document.getElementById('global-ai-model-input').value.trim()||'gemini-2.5-flash';
+    const fileInput=document.getElementById('resume-file-input');
+    const errMsg=document.getElementById('ai-import-error-msg');
+    if(!apiKey){errMsg.innerText='Set Gemini API Key first.';errMsg.classList.remove('hidden');return;}
+    if(fileInput.files.length===0){errMsg.innerText='Select a file.';errMsg.classList.remove('hidden');return;}
+    const file=fileInput.files[0];
+    errMsg.classList.add('hidden');
+    document.getElementById('process-import-btn').classList.add('hidden');
+    fileInput.disabled=true;
+    document.getElementById('ai-import-loading').classList.remove('hidden');
+    document.getElementById('ai-import-loading').classList.add('flex');
+    const reader=new FileReader();
+    reader.onload=async e=>{
+        try {
+            const b64=e.target.result.split(',')[1];
+            const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const payload={contents:[{parts:[{text:"Extract professional summary, skills (max 15), work experiences, education history, certifications, and hobbies from this resume. Do not invent info. Output strict JSON."},{inlineData:{mimeType:file.type||'application/pdf',data:b64}}]}],systemInstruction:{parts:[{text:"You are an expert resume parser."}]},generationConfig:{responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{summary:{type:"STRING"},skills:{type:"ARRAY",items:{type:"STRING"}},experiences:{type:"ARRAY",items:{type:"OBJECT",properties:{company:{type:"STRING"},title:{type:"STRING"},date:{type:"STRING"},location:{type:"STRING"},bullets:{type:"ARRAY",items:{type:"STRING"}}}}},education:{type:"ARRAY",items:{type:"OBJECT",properties:{degree:{type:"STRING"},school:{type:"STRING"},location:{type:"STRING"}}}},certifications:{type:"ARRAY",items:{type:"OBJECT",properties:{title:{type:"STRING"},issuer:{type:"STRING"},date:{type:"STRING"}}}},hobbies:{type:"ARRAY",items:{type:"STRING"}}}}}};
+            const result=await fetchWithRetry(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+            const aiData=JSON.parse(result.candidates?.[0]?.content?.parts?.[0]?.text||'{}');
+            saveState();
+            const sp=document.querySelector('#resume-main-container #resume-section-summary p');
+            if(sp&&aiData.summary) sp.innerText=aiData.summary;
+            const sc=document.querySelector('#resume-main-container #skills-container');
+            if(sc&&aiData.skills?.length){sc.innerHTML='';aiData.skills.slice(0,15).forEach(skill=>{const el=document.createElement('span');el.draggable=true;el.ondragstart=dragStart;el.ondragover=dragOver;el.ondragend=dragEnd;el.className='bg-gray-100 border border-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium relative group flex items-center cursor-move';el.innerHTML=`<svg class="w-3 h-3 mr-1.5 text-gray-400 opacity-0 group-hover:opacity-100 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg><span contenteditable="true" class="outline-none min-w-[20px] cursor-text" onmousedown="event.stopPropagation()">${skill}</span><button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 z-10 shadow no-print cursor-pointer">×</button>`;sc.appendChild(el);});}
+            const ec=document.querySelector('#resume-main-container #experience-container');
+            if(ec&&aiData.experiences?.length){ec.innerHTML='';aiData.experiences.forEach(exp=>{const el=document.createElement('div');el.className='mb-6 relative group border border-transparent hover:border-gray-100 rounded p-4 -mx-4 transition-colors';el.innerHTML=`
+                <div class="absolute -top-3 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print z-20">
+                    <button type="button" contenteditable="false" onclick="moveExperienceUp(this.closest('.relative.group'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑ Up</button>
+                    <button type="button" contenteditable="false" onclick="moveExperienceDown(this.closest('.relative.group'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓ Down</button>
+                    <button type="button" contenteditable="false" onclick="togglePageBreak(this.closest('.relative.group'))" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">Page Break</button>
+                    <button type="button" contenteditable="false" onclick="removeElement(this.closest('.relative.group'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button>
+                </div>
+                <div class="mb-1"><h3 class="text-lg font-bold text-gray-900"><span contenteditable="true">${exp.company||'Company Name'}</span> <span class="text-gray-500 font-normal text-sm">| <span contenteditable="true">${exp.location||'Location'}</span></span></h3></div><div class="flex justify-between items-baseline mb-2"><h4 contenteditable="true" class="text-md font-semibold text-gray-800 italic inline-block">${exp.title||'Job Title'}</h4><span contenteditable="true" class="text-sm font-semibold text-gray-600">${exp.date||'Date Range'}</span></div><ul class="list-disc list-outside ml-5 text-sm text-gray-700 space-y-2 mt-2"></ul>`;const ul=el.querySelector('ul');if(exp.bullets?.length){exp.bullets.forEach(bt=>{const li=document.createElement('li');li.className='relative group/bullet pr-6';li.innerHTML=`<span contenteditable="true" class="block outline-none">${bt}</span><button type="button" contenteditable="false" onclick="removeElement(this.closest('li'))" class="absolute top-0.5 right-0 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover/bullet:opacity-100 z-10 shadow no-print cursor-pointer">×</button>`;ul.appendChild(li);});}const helper=document.createElement('li');helper.className='relative group/bullet pr-6 no-print helper-bullet';helper.innerHTML=`<span contenteditable="false" class="block outline-none cursor-pointer text-blue-500 italic text-xs" onclick="addBullet(this)">+ Add bullet...</span>`;ul.appendChild(helper);ec.appendChild(el);});}
+            const edc=document.querySelector('#resume-main-container #education-container');
+            if(edc&&aiData.education?.length){edc.innerHTML='';aiData.education.forEach(edu=>{const el=document.createElement('div');el.className='relative group p-2 -m-2 border border-transparent hover:border-gray-100 rounded transition-colors';el.innerHTML=`<div class="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 z-10 no-print"><button type="button" contenteditable="false" onclick="removeElement(this.closest('.relative.group'))" class="bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow cursor-pointer">×</button></div><h3 contenteditable="true" class="text-md font-bold text-gray-900 inline-block pr-12">${edu.degree||'Degree'}</h3><p contenteditable="true" class="text-sm text-gray-700 mt-1">${edu.school||'University'} | ${edu.location||'Location'}</p>`;edc.appendChild(el);});}
+            if(aiData.certifications?.length || aiData.hobbies?.length){
+                let customSec=document.querySelector('#resume-main-container section[data-extracted="true"]');
+                if(!customSec){customSec=document.createElement('section');customSec.dataset.extracted="true";customSec.className='mb-8 group/section transition-all relative';customSec.innerHTML=`<div class="absolute -top-4 right-0 flex gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity no-print z-20"><button type="button" contenteditable="false" onclick="moveSectionUp(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑ Up</button><button type="button" contenteditable="false" onclick="moveSectionDown(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓ Down</button><button type="button" contenteditable="false" onclick="togglePageBreak(this.closest('section'))" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">Page Break</button><button type="button" contenteditable="false" onclick="removeElement(this.closest('section'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button></div><div class="flex items-center gap-3 border-b border-gray-300 pb-1 mb-3"><h2 contenteditable="true" class="text-xl font-bold text-blue-800 uppercase tracking-wider inline-block">Additional Information</h2></div><div class="text-gray-700 space-y-4"></div>`;document.querySelector('#resume-main-container').appendChild(customSec);}
+                const contentDiv=customSec.querySelector('div.text-gray-700');contentDiv.innerHTML='';
+                if(aiData.certifications?.length){const div=document.createElement('div');div.innerHTML=`<h4 class="font-bold text-sm uppercase text-gray-600 mb-2">Certifications</h4><ul class="list-disc ml-5 text-sm space-y-1"></ul>`;const ul=div.querySelector('ul');aiData.certifications.forEach(c=>{const li=document.createElement('li');li.innerHTML=`<span contenteditable="true">${c.title} (${c.issuer}${c.date?', '+c.date:''})</span>`;ul.appendChild(li);});contentDiv.appendChild(div);}
+                if(aiData.hobbies?.length){const div=document.createElement('div');div.innerHTML=`<h4 class="font-bold text-sm uppercase text-gray-600 mb-2">Hobbies & Interests</h4><p contenteditable="true" class="text-sm">${aiData.hobbies.join(', ')}</p>`;contentDiv.appendChild(div);}
+            }
+            closeAiImportModal(); showToast('Resume imported!');        } catch(err) { document.getElementById('ai-import-error-msg').innerText='Error: '+err.message; document.getElementById('ai-import-error-msg').classList.remove('hidden'); }
+        finally { document.getElementById('ai-import-loading').classList.add('hidden');document.getElementById('ai-import-loading').classList.remove('flex');document.getElementById('process-import-btn').classList.remove('hidden');fileInput.disabled=false;fileInput.value=''; }
+    };
+    reader.readAsDataURL(file);
+}
+
+function getScrapedResume() {
+    const sp=document.querySelector('#resume-main-container #resume-section-summary p:not(.text-purple-900)');
+    const summary=sp?sp.innerText:'';
+    const skills=Array.from(document.querySelectorAll('#resume-main-container #skills-container span.outline-none:not(.text-purple-900)')).map(s=>s.innerText);
+    const experiences=[];
+    document.querySelectorAll('#resume-main-container #experience-container > div').forEach(b=>{
+        const cn=b.querySelector('h3 span:nth-child(1)'); const tn=b.querySelector('h4');
+        if(cn&&tn){const bullets=Array.from(b.querySelectorAll('ul li:not(.helper-bullet) > span.outline-none')).map(x=>x.innerText);experiences.push({company:cn.innerText.trim(),title:tn.innerText.trim(),bullets});}
+    });
+    return {summary,skills,experiences};
+}
+
+async function generateTailoredResume() {
+    const jobDesc=document.getElementById('job-description-input').value.trim();
+    const apiKey=document.getElementById('global-api-key-input').value.trim();
+    const model=document.getElementById('global-ai-model-input').value.trim()||'gemini-2.5-flash';
+    const errMsg=document.getElementById('ai-error-msg');
+    if(!apiKey){errMsg.innerText='Set Gemini API Key first.';errMsg.classList.remove('hidden');return;}
+    if(!jobDesc){errMsg.innerText='Paste a job description.';errMsg.classList.remove('hidden');return;}
+    errMsg.classList.add('hidden');
+    document.getElementById('generate-ai-btn').classList.add('hidden');
+    document.getElementById('job-description-input').disabled=true;
+    document.getElementById('ai-loading').classList.remove('hidden');
+    document.getElementById('ai-loading').classList.add('flex');
+    const resume=getScrapedResume();
+    try {
+        const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const result=await fetchWithRetry(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Job: "${jobDesc}"\nResume: ${JSON.stringify(resume,null,2)}\nRewrite summary, skills (max 10), and bullet points to emphasize keywords. Provide match_score.`}]}],systemInstruction:{parts:[{text:"You are an expert resume writer. Respond strictly using the provided JSON schema."}]},generationConfig:{responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{match_score:{type:"INTEGER"},summary:{type:"STRING"},skills:{type:"ARRAY",items:{type:"STRING"}},experiences:{type:"ARRAY",items:{type:"OBJECT",properties:{company:{type:"STRING"},title:{type:"STRING"},bullets:{type:"ARRAY",items:{type:"STRING"}}}}}}}}})});
+        const aiData=JSON.parse(result.candidates?.[0]?.content?.parts?.[0]?.text||'{}');
+        saveState();
+        const sumSec=document.querySelector('#resume-main-container #resume-section-summary');
+        if(sumSec&&aiData.summary){const el=document.createElement('div');el.className='suggested-item relative mt-4 group/suggestion';el.innerHTML=`<span class="absolute -top-2.5 left-3 bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow no-print z-10 uppercase">AI Suggestion</span><p contenteditable="true" class="text-purple-900 bg-purple-50 p-4 rounded-lg border-2 border-purple-200 leading-relaxed text-sm outline-none">${aiData.summary}</p><div class="absolute -top-3 -right-2 flex gap-1 opacity-0 group-hover/suggestion:opacity-100 no-print z-20"><button type="button" onclick="approveSummary(this)" class="bg-green-500 hover:bg-green-600 text-white rounded w-6 h-6 flex items-center justify-center text-sm shadow font-bold cursor-pointer">✓</button><button type="button" onclick="removeElement(this.closest('.suggested-item'))" class="bg-red-500 hover:bg-red-600 text-white rounded w-6 h-6 flex items-center justify-center text-sm shadow font-bold cursor-pointer">×</button></div>`;sumSec.appendChild(el);}
+        const sc=document.querySelector('#resume-main-container #skills-container');
+        if(sc&&aiData.skills){const existing=[...sc.querySelectorAll('span.outline-none')].map(s=>s.innerText.trim().toLowerCase());aiData.skills.slice(0,10).forEach(skill=>{if(!existing.includes(skill.toLowerCase())){const el=document.createElement('span');el.className='suggested-item bg-purple-50 border border-purple-300 text-purple-800 px-3 py-1 rounded-md text-sm font-medium relative group/suggestion flex items-center shadow-sm';el.innerHTML=`<span contenteditable="true" class="outline-none min-w-[20px] cursor-text" onmousedown="event.stopPropagation()">${skill}</span><div class="absolute -top-2.5 -right-4 flex gap-0.5 opacity-0 group-hover/suggestion:opacity-100 no-print z-20"><button type="button" onclick="approveSkill(this)" class="bg-green-500 hover:bg-green-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow font-bold cursor-pointer">✓</button><button type="button" onclick="removeElement(this.closest('.suggested-item'))" class="bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow font-bold cursor-pointer">×</button></div>`;sc.appendChild(el);}});}
+        if(aiData.experiences){document.querySelectorAll('#resume-main-container #experience-container > div').forEach(block=>{const cn=block.querySelector('h3 span:nth-child(1)');const tn=block.querySelector('h4');if(cn&&tn){const match=aiData.experiences.find(e=>e.company===cn.innerText.trim()&&e.title===tn.innerText.trim());if(match?.bullets){const ul=block.querySelector('ul');const helper=ul.querySelector('.helper-bullet');match.bullets.forEach(bt=>{const li=document.createElement('li');li.className='suggested-item relative group/suggestion pr-8 mb-2';li.innerHTML=`<span contenteditable="true" class="block outline-none text-purple-900 bg-purple-50 px-2 py-1.5 rounded border border-purple-200">${bt}</span><div class="absolute top-1 right-0 flex gap-0.5 opacity-0 group-hover/suggestion:opacity-100 no-print z-20"><button type="button" onclick="approveBullet(this)" class="bg-green-500 hover:bg-green-600 text-white rounded w-5 h-5 flex items-center justify-center text-xs shadow cursor-pointer">✓</button><button type="button" onclick="removeElement(this.closest('.suggested-item'))" class="bg-red-500 hover:bg-red-600 text-white rounded w-5 h-5 flex items-center justify-center text-xs shadow cursor-pointer">×</button></div>`;if(helper)ul.insertBefore(li,helper);else ul.appendChild(li);});}}});}
+        toggleView('resume');
+        const ms=document.getElementById('global-match-score');
+        if(ms){ms.innerText=`Match: ${aiData.match_score||0}%`;ms.classList.remove('hidden');}
+        closeAiModal(); checkPendingSuggestions(); showToast('Suggestions added!');
+    } catch(err) {
+        document.getElementById('generate-ai-btn').classList.remove('hidden');
+        document.getElementById('job-description-input').disabled=false;
+        errMsg.innerText='Error: '+err.message; errMsg.classList.remove('hidden');
+    } finally {
+        document.getElementById('ai-loading').classList.add('hidden');
+        document.getElementById('ai-loading').classList.remove('flex');
+    }
+}
+
+function checkPendingSuggestions() {
+    const has=document.querySelectorAll('.suggested-item').length>0;
+    const btn=document.getElementById('approve-all-suggestions-btn');
+    if(btn){has?(btn.classList.remove('hidden'),btn.classList.add('flex')):(btn.classList.add('hidden'),btn.classList.remove('flex'));}
+}
+
+function approveAllSuggestions() {
+    saveState();
+    const ss=document.querySelector('#resume-section-summary .suggested-item');
+    if(ss){const b=ss.querySelector('button.bg-green-500');if(b)approveSummary(b,false);}
+    document.querySelectorAll('#skills-container .suggested-item').forEach(s=>{const b=s.querySelector('button.bg-green-500');if(b)approveSkill(b,false);});
+    document.querySelectorAll('#experience-container > div').forEach(block=>{const ul=block.querySelector('ul');if(!ul)return;const sb=ul.querySelectorAll('.suggested-item');if(sb.length>0){ul.querySelectorAll('li:not(.helper-bullet):not(.suggested-item)').forEach(ob=>ob.remove());sb.forEach(b=>{const btn=b.querySelector('button.bg-green-500');if(btn)approveBullet(btn,false);})}});
+    checkPendingSuggestions(); showToast('All suggestions approved!');
+}
+
+function approveSummary(btn,doSave=true) {
+    if(doSave)saveState();
+    const div=btn.closest('.suggested-item');
+    const text=div.querySelector('p').innerText;
+    const op=div.closest('section').querySelector('p:not(.text-purple-900)');
+    if(op)op.innerText=text; div.remove(); if(doSave)checkPendingSuggestions();
+}
+
+function approveSkill(btn,doSave=true) {
+    if(doSave)saveState();
+    const span=btn.closest('.suggested-item');
+    const text=span.querySelector('span.outline-none').innerText;
+    span.className='bg-gray-100 border border-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium relative group flex items-center cursor-move';
+    span.draggable=true; span.ondragstart=dragStart; span.ondragover=dragOver; span.ondragend=dragEnd;
+    span.innerHTML=`<svg class="w-3 h-3 mr-1.5 text-gray-400 opacity-0 group-hover:opacity-100 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg><span contenteditable="true" class="outline-none min-w-[20px] cursor-text" onmousedown="event.stopPropagation()">${text}</span><button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 z-10 shadow no-print cursor-pointer">×</button>`;
+    if(doSave)checkPendingSuggestions();
+}
+
+function approveBullet(btn,doSave=true) {
+    if(doSave)saveState();
+    const li=btn.closest('li');
+    const text=li.querySelector('span.outline-none').innerText;
+    li.className='relative group/bullet pr-6';
+    li.innerHTML=`<span contenteditable="true" class="block outline-none">${text}</span><button type="button" contenteditable="false" onclick="removeElement(this.closest('li'))" class="absolute top-0.5 right-0 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover/bullet:opacity-100 z-10 shadow no-print cursor-pointer">×</button>`;
+    if(doSave)checkPendingSuggestions();
+}
+
+async function generateCoverLetter() {
+    const jobDesc=document.getElementById('cl-job-description-input').value.trim();
+    const apiKey=document.getElementById('global-api-key-input').value.trim();
+    const model=document.getElementById('global-ai-model-input').value.trim()||'gemini-2.5-flash';
+    const errMsg=document.getElementById('cl-error-msg');
+    if(!apiKey){errMsg.innerText='Set Gemini API Key first.';errMsg.classList.remove('hidden');return;}
+    if(!jobDesc){errMsg.innerText='Paste a job description.';errMsg.classList.remove('hidden');return;}
+    errMsg.classList.add('hidden');
+    document.getElementById('cl-generate-btn').classList.add('hidden');
+    document.getElementById('cl-job-description-input').disabled=true;
+    document.getElementById('cl-loading').classList.remove('hidden');
+    document.getElementById('cl-loading').classList.add('flex');
+    document.getElementById('cl-output-container').classList.add('hidden');
+    const resume=getScrapedResume();
+    try {
+        const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const result=await fetchWithRetry(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Job: "${jobDesc}"\nResume: ${JSON.stringify(resume,null,2)}\nWrite a professional cover letter in plain text.`}]}],systemInstruction:{parts:[{text:"You are an expert cover letter writer. Output only plain text."}]}})});
+        const text=result.candidates?.[0]?.content?.parts?.[0]?.text||'';
+        document.getElementById('cl-output-text').value=text;
+        document.getElementById('cl-input-area').classList.add('hidden');
+        document.getElementById('cl-output-container').classList.remove('hidden');
+        document.getElementById('cl-output-container').classList.add('flex');
+        document.getElementById('cl-download-group').classList.remove('hidden');
+        document.getElementById('cl-download-group').classList.add('flex');
+        showToast('Cover letter generated!');
+    } catch(err) {
+        document.getElementById('cl-job-description-input').disabled=false;
+        errMsg.innerText='Error: '+err.message; errMsg.classList.remove('hidden');
+    } finally {
+        document.getElementById('cl-loading').classList.add('hidden');
+        document.getElementById('cl-loading').classList.remove('flex');
+        document.getElementById('cl-generate-btn').classList.remove('hidden');
+        document.getElementById('cl-generate-btn').innerText='Regenerate';
+        document.getElementById('cl-job-description-input').disabled=false;
+    }
+}
+
+async function downloadCoverLetter() {
+    const text=document.getElementById('cl-output-text').value;
+    const format=document.getElementById('cl-format-select').value;
+    let blob;
+    if(format==='txt') blob=new Blob([text],{type:'text/plain'});
+    else if(format==='html') blob=new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cover Letter</title><style>body{font-family:sans-serif;line-height:1.6;padding:2rem;max-width:800px;margin:0 auto;}</style></head><body>${text.replace(/\n/g,'<br>')}</body></html>`],{type:'text/html'});
+    else if(format==='pdf'){try{const d=document.createElement('div');d.innerHTML=`<div style="font-family:sans-serif;line-height:1.6;padding:2rem;font-size:14px;">${text.replace(/\n/g,'<br>')}</div>`;blob=await html2pdf().set({margin:10,filename:'Cover_Letter.pdf',image:{type:'jpeg',quality:.8},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(d).output('blob');}catch(e){showToast('PDF error.',true);return;}}
+    try {
+        if(window.showSaveFilePicker){const mime={'txt':'text/plain','html':'text/html','pdf':'application/pdf'};const h=await window.showSaveFilePicker({suggestedName:`Cover_Letter.${format}`,types:[{description:`${format.toUpperCase()} File`,accept:{[mime[format]]:[`.${format}`]}}]});const w=await h.createWritable();await w.write(blob);await w.close();showToast('Saved!');}
+        else{const url=URL.createObjectURL(blob);const a=Object.assign(document.createElement('a'),{href:url,download:`Cover_Letter.${format}`});document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);showToast('Downloaded!');}
+    } catch(e){if(e.name!=='AbortError')showToast('Save failed.',true);}
+}
+
+// Bind Google API init on script load
+
+</script>
+</body>
+</html>

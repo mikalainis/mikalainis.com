@@ -1,0 +1,33 @@
+        /* ---- Print ---- */
+        @media print {
+            body { display:block !important; background:white !important; }
+            .no-print { display:none !important; }
+            .print-container { box-shadow:none !important; margin:0 auto !important; padding:0 !important; border:none !important; }
+            [contenteditable="true"] { padding:0 !important; margin:0 !important; }
+            .page-break-before { page-break-before:always !important; break-before:page !important; border-top:none !important; margin-top:0 !important; padding-top:0 !important; }
+            .page-break-before::before { display:none !important; }
+            #resume-main-container section.mb-8 { margin-bottom:.75rem !important; }
+            #resume-main-container .mb-6 { margin-bottom:.5rem !important; }
+            #resume-main-container .p-4 { padding:0 !important; }
+            #resume-main-container .-mx-4 { margin:0 !important; }
+            .tc-content-wrapper { box-shadow:none !important; border-radius:0 !important; max-width:100% !important; width:100% !important; }
+            .print-pad { padding:1.5rem !important; }
+            .timeline-dot { box-shadow:none !important; border-color:transparent !important; }
+            .page-break-inside-avoid { break-inside:avoid; page-break-inside:avoid; }
+            .print-hide { display:none !important; }
+            /* Preserving the 4-column grid for Talent Card */
+            .print-grid-tc { display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important; align-items:start !important; gap: 1.5rem !important; }
+            .print-col-span-3 { grid-column:span 3/span 3 !important; }
+            .print-col-span-1 { grid-column:span 1/span 1 !important; }
+            /* Preserving the 2-column sub-grid */
+            .print-grid-2 { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap: 1.5rem !important; }
+            /* Forced Row & Alignment for Header */
+            .print-row { display: flex !important; flex-direction: row !important; align-items: flex-start !important; gap: 1.5rem !important; text-align: left !important; }
+            .print-items-start { align-items: flex-start !important; }
+            .print-text-left { text-align: left !important; }
+            .print-mt-0 { margin-top: 0 !important; }
+            
+            /* Enforce 1-page Landscape for Talent Card */
+            #talent-card-view { page-break-after: avoid !important; height: 100vh !important; overflow: hidden !important; }
+            @page { size: letter landscape; margin: 0.25in; }
+        }

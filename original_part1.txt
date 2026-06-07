@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Builder + Job Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Google API: api.js fires gapiReady() when loaded; gsi/client loads in parallel -->
+    <script src="https://apis.google.com/js/api.js" async></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+
+        /* ---- Resume Builder Styles (unchanged) ---- */
+        [contenteditable="true"] { outline:none; transition:all .2s; border-radius:.25rem; padding:2px 4px; margin:-2px -4px; }
+        [contenteditable="true"]:hover { background-color:#f1f5f9; }
+        [contenteditable="true"]:focus { background-color:#f8fafc; box-shadow:0 0 0 2px #93c5fd; }
+        button svg, label svg { pointer-events:none; }
+        .dragging { opacity:.5; transform:scale(.95); }
+        .page-break-before { border-top:2px dashed #3b82f6 !important; margin-top:2.5rem !important; padding-top:1.5rem !important; position:relative; }
+        .page-break-before::before { content:"Page Break (Print)"; position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:#3b82f6; color:#fff; font-size:.75rem; padding:.125rem .75rem; border-radius:9999px; font-weight:600; z-index:20; pointer-events:none; }
+        .standalone-page-break { height: 2rem; border-top: none !important; padding-top: 0 !important; }
+        .standalone-page-break::after { content: ""; position: absolute; top: 50%; left: 0; right: 0; border-top: 2px dashed #3b82f6; }
+        .standalone-page-break::before { top: 50%; transform: translate(-50%, -50%); }
+        .skill-tag { transition:all .2s; }
+        .skill-tag:hover { transform:translateY(-2px); box-shadow:0 4px 6px -1px rgba(0,0,0,.1); }
+        .timeline-dot { position:absolute; left:-33px; top:6px; width:14px; height:14px; border-radius:50%; background:#4f46e5; border:3px solid #fff; box-shadow:0 0 0 1px #e5e7eb; }
+
+        /* ---- Job Tracker Styles ---- */
+        #tracker-view { font-family: 'Inter', sans-serif; }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            transition: transform .2s, box-shadow .2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+        }
+        .stat-card.total::before   { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+        .stat-card.applied::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+        .stat-card.interview::before { background: linear-gradient(90deg, #f59e0b, #f97316); }
+        .stat-card.offer::before   { background: linear-gradient(90deg, #10b981, #34d399); }
+        .stat-card.rejected::before{ background: linear-gradient(90deg, #ef4444, #f43f5e); }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+        .badge-applied    { background:#dbeafe; color:#1d4ed8; }
+        .badge-interview  { background:#fef3c7; color:#b45309; }
+        .badge-offer      { background:#d1fae5; color:#065f46; }
+        .badge-rejected   { background:#fee2e2; color:#991b1b; }
+        .badge-pending    { background:#f3f4f6; color:#6b7280; }
+        .badge-ghosted    { background:#ede9fe; color:#5b21b6; }
+
+        .app-row {
+            display: grid;
+            grid-template-columns: 1fr 160px 120px 140px 32px;
+            gap: .75rem;
+            align-items: center;
+            padding: .875rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background .15s;
+            font-size: .85rem;
+        }
+        .app-row:hover { background: #fafafa; }
+        .app-row-header {
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #9ca3af;
+            padding: .5rem 1rem;
+            display: grid;
+            grid-template-columns: 1fr 160px 120px 140px 32px;
+            gap: .75rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .scan-pulse {
+            animation: pulse-ring 1.4s ease-in-out infinite;
+        }
+        @keyframes pulse-ring {
+            0%,100% { opacity:1; }
+            50% { opacity:.4; }
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #f3f4f6;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width .6s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* Funnel */
+        .funnel-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: .75rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .funnel-label { width: 90px; font-size:.8rem; color:#6b7280; font-weight:600; }
+        .funnel-bar-wrap { flex:1; }
+        .funnel-count { width:32px; text-align:right; font-size:.85rem; font-weight:700; color:#111827; font-family:'DM Mono',monospace; }
+
+        /* Modal */
+        .tracker-modal { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:10001; display:none; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(4px); }
+        .tracker-modal.open { display:flex; }
+        .tracker-modal-box { background:white; border-radius:20px; max-width:560px; width:100%; box-shadow:0 25px 60px rgba(0,0,0,.2); overflow:hidden; }
+
+        /* Scan log */
+        #scan-log { font-family:'DM Mono',monospace; font-size:.75rem; line-height:1.6; }
+
+        /* Google Connect button */
+        .google-btn {
+            display:inline-flex; align-items:center; gap:.625rem;
+            background:white; border:1.5px solid #dadce0; border-radius:8px;
+            padding:.625rem 1.25rem; font-size:.875rem; font-weight:600; color:#3c4043;
+            cursor:pointer; transition:box-shadow .2s, border-color .2s;
+            box-shadow:0 1px 3px rgba(0,0,0,.08);
+        }
+        .google-btn:hover { box-shadow:0 2px 8px rgba(0,0,0,.15); border-color:#c5c7c8; }
+        .google-btn.connected { border-color:#34d399; color:#065f46; background:#f0fdf4; }
+
+
+
+        /* Empty state */
+        .empty-state { text-align:center; padding:3rem 1rem; color:#9ca3af; }
+        .empty-state svg { margin:0 auto 1rem; opacity:.3; }
+
+        /* ---- Print ---- */
+        @media print {
+            body { display:block !important; background:white !important; }
+            .no-print { display:none !important; }
+            .print-container { box-shadow:none !important; margin:0 auto !important; padding:0 !important; border:none !important; }
+            [contenteditable="true"] { padding:0 !important; margin:0 !important; }
+            .page-break-before { page-break-before:always !important; break-before:page !important; border-top:none !important; margin-top:0 !important; padding-top:0 !important; }
+            .page-break-before::before { display:none !important; }
+            #resume-main-container section.mb-8 { margin-bottom:.75rem !important; }
+            #resume-main-container .mb-6 { margin-bottom:.5rem !important; }
+            #resume-main-container .p-4 { padding:0 !important; }
+            #resume-main-container .-mx-4 { margin:0 !important; }
+            .main-container { box-shadow:none !important; border-radius:0 !important; max-width:100% !important; width:100% !important; }
+            .print-pad { padding:1.5rem !important; }
+            .timeline-dot { box-shadow:none !important; border-color:transparent !important; }
+            .page-break-inside-avoid { break-inside:avoid; page-break-inside:avoid; }
+            .print-hide { display:none !important; }
+            .print-grid { display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; align-items:start !important; }
+            .print-col-span-2 { grid-column:span 2/span 2 !important; }
+            .print-col-span-1 { grid-column:span 1/span 1 !important; }
+        }
+    </style>
+    <style id="print-page-style">
+        @media print { @page { size: letter portrait; margin: 0.5in; } }
+    </style>
+</head>
+<body class="text-gray-800 antialiased p-4 md:p-8 min-h-screen">
+
+<!-- Password Protection Overlay -->
+<div id="password-overlay" class="fixed inset-0 bg-slate-900 z-[99999] flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-2xl p-8 shadow-2xl text-center">
+        <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mx-auto mb-6">
+            <i data-lucide="lock" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Private Access</h2>
+        <p class="text-gray-500 text-sm mb-8">
+            Please enter your password to access the Resume Builder. <br>
+            <span class="text-blue-600 font-semibold mt-2 block">Contact me if you need the password.</span>
+        </p>
+        <form onsubmit="checkToolsPassword(event)" class="space-y-4 text-left">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-tight mb-1.5 ml-1">Password</label>
+                <input type="password" id="tools-password-input" placeholder="Enter password" 
+                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" autofocus>
+            </div>
+            <div id="password-error" class="text-red-500 text-xs hidden px-1">Incorrect password</div>
+            <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all mt-2">
+                Unlock Tool
+            </button>
+        </form>
+        <a href="/" class="block mt-8 text-gray-400 hover:text-gray-600 text-sm font-medium">← Back to Portfolio</a>
+    </div>
+</div>
+
+<div class="max-w-[1400px] mx-auto w-full flex flex-col md:flex-row gap-8 items-start relative">
+
+    <!-- ═══════════════════════════════════════════
+         LEFT SIDEBAR
+    ═══════════════════════════════════════════ -->
+    <aside class="no-print w-full md:w-72 bg-slate-800 text-white shadow-xl rounded-xl z-[9999] md:sticky md:top-8 flex flex-col gap-6 p-5 border border-slate-700 shrink-0">
+
+        <!-- Branding -->
+        <div class="font-semibold text-base flex flex-col gap-3 border-b border-slate-700 pb-4">
+            <div class="flex items-center gap-2 text-blue-400">
+                <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span class="text-white tracking-wide">Resume Builder</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                <span id="global-match-score" class="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded text-sm font-bold hidden border border-indigo-500/30 w-fit">Match: --%</span>
+                <button type="button" id="approve-all-suggestions-btn" onclick="approveAllSuggestions()" class="hidden w-full bg-green-600 hover:bg-green-500 text-white text-xs font-bold py-2 px-3 rounded shadow transition-colors items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Approve All AI Edits
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Settings -->
+        <div class="flex flex-col gap-3 border-b border-slate-700 pb-4 text-sm text-slate-200">
+            <span class="font-semibold text-white flex justify-between items-center">
+                AI Settings
+                <a href="https://aistudio.google.com/prompts/new_chat" target="_blank" class="text-blue-400 hover:text-blue-300 font-normal text-xs hover:underline">Get Key</a>
+            </span>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Gemini API Key</label>
+                <input type="password" id="global-api-key-input" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-500" placeholder="Paste API Key..." onchange="setLocalStorageSafe('gemini_api_key', this.value); fetchGeminiModels();">
+                <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
+                    Powers AI features: resume tailoring, job match scoring, Gmail application scanner, and cover letter generation.
+                    Your key is stored only in your browser — never sent to any server.
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-400 hover:text-indigo-300 underline">Get a free key →</a>
+                </p>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1 flex items-center justify-between">
+                    <span>Model</span>
+                    <button type="button" onclick="fetchGeminiModels()" id="refresh-models-btn"
+                        class="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer bg-transparent border-0">
+                        ↻ Refresh
+                    </button>
+                </label>
+                <select id="global-ai-model-input"
+                    class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none text-xs"
+                    onchange="setLocalStorageSafe('gemini_model', this.value); const mn=document.getElementById('autoscan-model-note'); if(mn) mn.textContent=this.value;">
+                    <optgroup label="── Gemini 3 (Latest) ──">
+                        <option value="gemini-3-flash-preview">gemini-3-flash-preview — fastest</option>
+                        <option value="gemini-3-pro-preview">gemini-3-pro-preview — most capable</option>
+                    </optgroup>
+                    <optgroup label="── Gemini 2.5 (Stable) ──">
+                        <option value="gemini-2.5-flash" selected>gemini-2.5-flash ★ recommended</option>
+                        <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite — budget</option>
+                        <option value="gemini-2.5-pro">gemini-2.5-pro — complex tasks</option>
+                    </optgroup>
+                </select>
+                <p class="text-[10px] text-slate-500 mt-1">
+                    ↻ Refresh loads available models from your API key.
+                </p>
+            </div>
+        </div>
+
+        <!-- Google Connect -->
+        <div class="flex flex-col gap-3 border-b border-slate-700 pb-4 text-sm text-slate-200">
+            <span class="font-semibold text-white">Google Account</span>
+
+            <!-- Disconnected state -->
+            <div id="google-disconnected-ui" class="flex flex-col gap-2">
+                <p class="text-[11px] text-slate-400 leading-snug">Connect your Google account to scan Gmail for job applications and browse your Drive resume files.</p>
+                <p class="text-[10px] text-slate-500 leading-snug mt-1">
+                    Read-only access · Nothing stored on any server ·
+                    <a href="/privacy" target="_blank" class="text-indigo-400 hover:text-indigo-300 underline">Privacy policy</a>
+                </p>
+                <button type="button" id="google-connect-btn" onclick="connectGoogle()"
+                    class="w-full justify-center bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer border border-gray-200">
+                    <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Sign in with Google
+                </button>
+            </div>
+
+            <!-- Connected state -->
+            <div id="google-connected-panel" class="hidden flex-col gap-2">
+                <div class="flex items-center gap-2 bg-emerald-900/30 border border-emerald-700/40 rounded-lg px-3 py-2">
+                    <img id="google-user-avatar" src="" alt="" class="w-6 h-6 rounded-full hidden">
+                    <div class="min-w-0 flex-1">
+                        <div id="google-user-name" class="text-xs font-bold text-emerald-300 truncate"></div>
+                        <div id="google-user-email" class="text-[10px] text-emerald-400/70 truncate"></div>
+                    </div>
+                    <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <!-- Drive folder selector -->
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1 uppercase tracking-wider font-semibold">Drive Folder (optional)</label>
+                    <div class="flex gap-1.5">
+                        <input type="text" id="drive-folder-name" readonly placeholder="All of Drive"
+                            class="flex-1 min-w-0 bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-[11px] text-slate-300 outline-none cursor-pointer truncate"
+                            onclick="openFolderPicker()">
+                        <button type="button" onclick="openFolderPicker()" title="Browse folders"
+                            class="bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-300 rounded px-2 py-1.5 text-xs cursor-pointer transition-colors shrink-0">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+                        </button>
+                        <button type="button" onclick="clearFolderFilter()" title="Clear folder filter" id="clear-folder-btn" class="hidden bg-red-900/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 rounded px-2 py-1.5 text-xs cursor-pointer transition-colors shrink-0">×</button>
+                    </div>
+                </div>
+                <button type="button" onclick="disconnectGoogle()"
+                    class="w-full justify-center bg-red-900/30 hover:bg-red-900/50 text-red-300 font-semibold py-1.5 px-4 rounded-lg transition-colors flex items-center gap-2 cursor-pointer border border-red-800/40 text-xs">
+                    Sign out
+                </button>
+            </div>
+        </div>
+<!-- Navigation -->
+        <div class="flex flex-col gap-3 text-sm text-slate-200">
+
+            <!-- Views -->
+            <button type="button" id="btn-show-tracker" onclick="toggleView('tracker')" class="w-full justify-start bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer border border-emerald-400">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                <span>Job Tracker</span>
+            </button>
+
+            <button type="button" id="btn-generate-tc" onclick="toggleView('talent-card')" class="w-full justify-start bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer border border-sky-400">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                <span>View Talent Card</span>
+            </button>
+            <button type="button" id="btn-show-resume" onclick="toggleView('resume')" class="hidden w-full justify-start bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer border border-slate-400">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <span>Back to Full Resume</span>
+            </button>
+
+            <div class="h-px w-full bg-slate-700 my-1"></div>
+
+            <button type="button" onclick="openAiImportModal()" class="w-full justify-start bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                <span>AI Import (Any Doc)</span>
+            </button>
+            <button type="button" onclick="openAiModal()" class="w-full justify-start bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>Tailor with AI</span>
+            </button>
+            <button type="button" onclick="openCoverLetterModal()" class="w-full justify-start bg-pink-600 hover:bg-pink-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <span>Cover Letter (AI)</span>
+            </button>
+            <button type="button" onclick="addCustomSection()" class="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer mt-2">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <span>Add Section</span>
+            </button>
+            <button type="button" id="undo-btn" onclick="undo()" class="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 opacity-50 cursor-not-allowed" disabled>
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                <span>Undo Edit</span>
+            </button>
+
+            <div class="h-px w-full bg-slate-700 my-1"></div>
+
+            <label class="w-full justify-start bg-teal-600 hover:bg-teal-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer m-0">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                <span>Load HTML</span>
+                <input type="file" accept=".html,.htm" class="hidden no-print" onchange="importHTML(event)">
+            </label>
+            <button type="button" onclick="downloadHTML()" class="w-full justify-start bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4-4m4 4V4"></path></svg>
+                <span>Save HTML</span>
+            </button>
+            <button type="button" onclick="window.print()" class="w-full justify-start bg-indigo-800 hover:bg-indigo-700 border border-indigo-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                <span>Print to PDF</span>
+            </button>
+
+            <div class="h-px w-full bg-slate-700 my-1"></div>
+            <button type="button" onclick="if(confirm('Reset canvas? All unsaved changes will be lost.')) location.reload();" class="w-full justify-start bg-red-600 hover:bg-red-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-3 cursor-pointer">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span>Reset Canvas</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════════
+         VIEW 1: Resume
+    ═══════════════════════════════════════════ -->
+    <main id="resume-main-container" class="flex-1 w-full bg-white p-10 sm:p-14 shadow-lg rounded-xl print-container transition-all relative z-0">
+        <!-- Header -->
+        <header class="border-b-2 border-gray-200 pb-6 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-6 transition-colors duration-300">
+            <label class="relative group cursor-pointer w-32 h-32 flex-shrink-0 block m-0">
+                <img id="profile-img" src="https://ui-avatars.com/api/?name=Paulius+Mikalainis&background=EBF4FF&color=1E3A8A&size=150" alt="Profile Picture" class="w-full h-full object-cover rounded-full border-4 border-gray-100 group-hover:border-blue-400 transition-colors shadow-sm">
+                <div class="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity no-print">
+                    <span class="text-white text-sm font-semibold flex items-center flex-col gap-1 pointer-events-none">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Upload
+                    </span>
+                </div>
+                <input type="file" accept="image/*" class="hidden no-print" onchange="handleImageUpload(event)">
+            </label>
+            <div class="flex-1 w-full text-center sm:text-left">
+                <div class="group inline-flex items-center gap-3 mb-3 cursor-pointer relative" onclick="addContact()">
+                    <h1 contenteditable="true" class="text-4xl font-bold text-gray-900 inline-block" onclick="event.stopPropagation()">Paulius Mikalainis</h1>
+                    <span class="absolute -top-6 left-0 sm:static sm:-top-auto sm:left-auto text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-semibold no-print whitespace-nowrap">+ Add Info</span>
+                </div>
+                <div class="mb-2">
+                    <h4 contenteditable="true" class="text-xl font-semibold text-blue-600 uppercase tracking-wider inline-block">Principal Data Scientist / BI Manager</h4>
+                </div>
+                <div class="flex flex-wrap justify-center sm:justify-start gap-x-6 gap-y-3 text-sm text-gray-600" id="contact-container">
+                    <div class="flex items-center relative group pr-4">
+                        <svg class="w-4 h-4 mr-1 text-gray-400 shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span contenteditable="true" class="outline-none">Basking Ridge, NJ 07920</span>
+                        <button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-1 -right-1 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow no-print cursor-pointer">×</button>
+                    </div>
+                    <div class="flex items-center relative group pr-4">
+                        <svg class="w-4 h-4 mr-1 text-gray-400 shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                        <span contenteditable="true" class="outline-none">(201) 919-6519</span>
+                        <button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-1 -right-1 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow no-print cursor-pointer">×</button>
+                    </div>
+                    <div class="flex items-center relative group pr-4">
+                        <svg class="w-4 h-4 mr-1 text-gray-400 shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <span contenteditable="true" class="outline-none">pmikalainis@gmail.com</span>
+                        <button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-1 -right-1 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow no-print cursor-pointer">×</button>
+                    </div>
+                    <div class="flex items-center relative group pr-4">
+                        <svg class="w-4 h-4 mr-1 text-gray-400 shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        <span contenteditable="true" class="outline-none">Mikalainis.com</span>
+                        <button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-1 -right-1 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow no-print cursor-pointer">×</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Summary -->
+        <section class="mb-8 group/section transition-all relative" id="resume-section-summary">
+            <div class="absolute -top-4 right-0 flex gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity no-print z-20">
+                <button type="button" contenteditable="false" onclick="moveSectionUp(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑ Up</button>
+                <button type="button" contenteditable="false" onclick="moveSectionDown(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓ Down</button>
+                <button type="button" contenteditable="false" onclick="togglePageBreak(this.closest('section'))" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">Page Break</button>
+                <button type="button" contenteditable="false" onclick="removeElement(this.closest('section'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button>
+            </div>
+            <div class="flex items-center gap-3 border-b border-gray-300 pb-1 mb-3">
+                <h2 contenteditable="true" class="text-xl font-bold text-blue-800 uppercase tracking-wider inline-block">Professional Summary</h2>
+            </div>
+            <p contenteditable="true" class="text-gray-700 leading-relaxed text-sm text-justify">Results-driven Principal Data Scientist and Business Intelligence Leader with over 18 years of experience in enterprise analytics, data science, and corporate finance. Specializing in Python, machine learning, and AI multi-agent orchestration, with a proven track record of building scalable data pipelines and autonomous workflows to optimize enterprise operations.</p>
+        </section>
+
+        <!-- Skills -->
+        <section class="mb-8 group/section transition-all relative" id="resume-section-skills">
+            <div class="absolute -top-4 right-0 flex gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity no-print z-20">
+                <button type="button" contenteditable="false" onclick="moveSectionUp(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑ Up</button>
+                <button type="button" contenteditable="false" onclick="moveSectionDown(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓ Down</button>
+                <button type="button" contenteditable="false" onclick="togglePageBreak(this.closest('section'))" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">Page Break</button>
+                <button type="button" contenteditable="false" onclick="removeElement(this.closest('section'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button>
+            </div>
+            <div class="flex items-center justify-between border-b border-gray-300 pb-1 mb-3 group cursor-pointer" onclick="addSkill()">
+                <h2 class="text-xl font-bold text-blue-800 uppercase tracking-wider inline-block"><span contenteditable="true" onclick="event.stopPropagation()">Skills</span></h2>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-semibold no-print">+ Add Skill</span>
+            </div>
+            <div class="flex flex-wrap gap-2" id="skills-container">
+                <span draggable="true" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondragend="dragEnd(event)" class="bg-gray-100 border border-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium relative group flex items-center cursor-move">
+                    <svg class="w-3 h-3 mr-1.5 text-gray-400 opacity-0 group-hover:opacity-100 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                    <span contenteditable="true" class="outline-none min-w-[20px] cursor-text" onmousedown="event.stopPropagation()">Python</span>
+                    <button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 z-10 shadow no-print cursor-pointer">×</button>
+                </span>
+                <span draggable="true" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondragend="dragEnd(event)" class="bg-gray-100 border border-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium relative group flex items-center cursor-move">
+                    <svg class="w-3 h-3 mr-1.5 text-gray-400 opacity-0 group-hover:opacity-100 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                    <span contenteditable="true" class="outline-none min-w-[20px] cursor-text" onmousedown="event.stopPropagation()">SQL / BigQuery</span>
+                    <button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 z-10 shadow no-print cursor-pointer">×</button>
+                </span>
+                <span draggable="true" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondragend="dragEnd(event)" class="bg-gray-100 border border-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium relative group flex items-center cursor-move">
+                    <svg class="w-3 h-3 mr-1.5 text-gray-400 opacity-0 group-hover:opacity-100 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                    <span contenteditable="true" class="outline-none min-w-[20px] cursor-text" onmousedown="event.stopPropagation()">AI Agents & LangGraph</span>
+                    <button type="button" contenteditable="false" onclick="removeElement(this.closest('.group'))" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 z-10 shadow no-print cursor-pointer">×</button>
+                </span>
+            </div>
+        </section>
+
+        <!-- Experience -->
+        <section class="mb-8 group/section transition-all relative" id="resume-section-experience">
+            <div class="absolute -top-4 right-0 flex gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity no-print z-20">
+                <button type="button" contenteditable="false" onclick="moveSectionUp(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑ Up</button>
+                <button type="button" contenteditable="false" onclick="moveSectionDown(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓ Down</button>
+                <button type="button" contenteditable="false" onclick="togglePageBreak(this.closest('section'))" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">Page Break</button>
+                <button type="button" contenteditable="false" onclick="removeElement(this.closest('section'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button>
+            </div>
+            <div class="flex items-center justify-between border-b border-gray-300 pb-1 mb-4 group cursor-pointer" onclick="addExperience()">
+                <h2 class="text-xl font-bold text-blue-800 uppercase tracking-wider inline-block"><span contenteditable="true" onclick="event.stopPropagation()">Professional Experience</span></h2>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded opacity-0 group-hover:opacity-100 font-semibold no-print">+ Add Experience</span>
+            </div>
+            <div id="experience-container">
+                <div class="mb-6 relative group border border-transparent hover:border-gray-100 rounded p-4 -mx-4 transition-colors">
+                    <div class="absolute -top-3 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print z-20">
+                        <button type="button" contenteditable="false" onclick="moveExperienceUp(this.closest('.relative.group'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑ Up</button>
+                        <button type="button" contenteditable="false" onclick="moveExperienceDown(this.closest('.relative.group'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓ Down</button>
+                        <button type="button" contenteditable="false" onclick="togglePageBreak(this.closest('.relative.group'))" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">Page Break</button>
+                        <button type="button" contenteditable="false" onclick="removeElement(this.closest('.relative.group'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button>
+                    </div>
+                    <div class="mb-1">
+                        <h3 class="text-lg font-bold text-gray-900"><span contenteditable="true">Verizon</span> <span class="text-gray-500 font-normal text-sm">| <span contenteditable="true">Basking Ridge, NJ</span></span></h3>
+                    </div>
+                    <div class="flex justify-between items-baseline mb-2">
+                        <h4 contenteditable="true" class="text-md font-semibold text-gray-800 italic inline-block">Principal Data Scientist</h4>
+                        <span contenteditable="true" class="text-sm font-semibold text-gray-600">Dec 2025 – Present</span>
+                    </div>
+                    <ul class="list-disc list-outside ml-5 text-sm text-gray-700 space-y-2 mt-2">
+                        <li class="relative group/bullet pr-6">
+                            <span contenteditable="true" class="block outline-none">Automated corporate reporting packages by moving from EPM data pulls to direct KPI store IDs, saving over 300 hours annually.</span>
+                            <button type="button" contenteditable="false" onclick="removeElement(this.closest('li'))" class="absolute top-0.5 right-0 bg-red-400 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover/bullet:opacity-100 z-10 shadow no-print cursor-pointer">×</button>
+                        </li>
+                        <li class="relative group/bullet pr-6 no-print helper-bullet">
+                            <span contenteditable="false" class="block outline-none cursor-pointer text-blue-500 italic text-xs" onclick="addBullet(this)">+ Add another bullet...</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Education -->
+        <section class="mb-8 group/section transition-all relative" id="resume-section-education">
+            <div class="absolute -top-4 right-0 flex gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity no-print z-20">
+                <button type="button" contenteditable="false" onclick="moveSectionUp(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↑ Up</button>
+                <button type="button" contenteditable="false" onclick="moveSectionDown(this.closest('section'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded px-2 py-0.5 text-xs shadow font-medium cursor-pointer">↓ Down</button>
+                <button type="button" contenteditable="false" onclick="togglePageBreak(this.closest('section'))" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">Page Break</button>
+                <button type="button" contenteditable="false" onclick="removeElement(this.closest('section'))" class="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-0.5 text-xs font-medium shadow-sm cursor-pointer">×</button>
+            </div>
+            <div class="flex items-center justify-between border-b border-gray-300 pb-1 mb-4 group cursor-pointer" onclick="addEducation()">
+                <h2 class="text-xl font-bold text-blue-800 uppercase tracking-wider inline-block"><span contenteditable="true" onclick="event.stopPropagation()">Education</span></h2>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded opacity-0 group-hover:opacity-100 font-semibold no-print">+ Add Edu</span>
+            </div>
+            <div id="education-container" class="space-y-4">
+                <div class="relative group p-2 -m-2 border border-transparent hover:border-gray-100 rounded transition-colors">
+                    <div class="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 z-10 no-print">
+                        <button type="button" contenteditable="false" onclick="removeElement(this.closest('.relative.group'))" class="bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow cursor-pointer">×</button>
+                    </div>
+                    <h3 contenteditable="true" class="text-md font-bold text-gray-900 inline-block pr-12">MS, Computer Science</h3>
+                    <p contenteditable="true" class="text-sm text-gray-700 mt-1">NJIT | Newark, NJ</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ═══════════════════════════════════════════
+         VIEW 2: Talent Card
+    ═══════════════════════════════════════════ -->
+    <main id="talent-card-view" class="hidden flex-1 w-full bg-white shadow-2xl rounded-xl border border-gray-200 overflow-hidden flex flex-col transition-all relative z-0 print-container">
+        <div class="main-container bg-white rounded-2xl overflow-hidden print:shadow-none flex-1">
+            <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-8 py-12 print-pad text-white flex flex-col md:flex-row items-center md:items-start gap-8">
+                <div class="flex-shrink-0 relative group cursor-pointer inline-block" onclick="document.getElementById('tc-photoUpload').click()">
+                    <img id="tc-profileImage" src="https://ui-avatars.com/api/?name=Paulius+Mikalainis&background=EBF4FF&color=1E3A8A&size=150" alt="Paulius Mikalainis" class="w-48 h-48 object-cover rounded-full border-4 border-white shadow-lg transition duration-300 group-hover:brightness-75">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300 print-hide rounded-full bg-black/40">
+                        <span class="text-xs text-white font-semibold">Change Photo</span>
+                    </div>
+                    <input type="file" id="tc-photoUpload" class="hidden print-hide" accept="image/*" onchange="handleImageUpload(event)">
+                </div>
+                <div class="flex-grow text-center md:text-left mt-4 md:mt-0">
+                    <h1 class="text-4xl md:text-5xl font-bold tracking-tight">Paulius Mikalainis</h1>
+                    <h2 class="text-xl md:text-2xl text-indigo-300 font-medium mt-3 mb-6">AI Agent Developer & BI Leader</h2>
+                    <div class="flex flex-col md:flex-row flex-wrap gap-4 md:gap-8 text-sm text-gray-300">
+                        <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-5 h-5 text-indigo-400"></i><span>Basking Ridge, NJ 07920</span></div>
+                        <div class="flex items-center gap-2"><i data-lucide="mail" class="w-5 h-5 text-indigo-400"></i><span>pmikalainis@gmail.com</span></div>
+                        <div class="flex items-center gap-2"><i data-lucide="phone" class="w-5 h-5 text-indigo-400"></i><span>(201) 919-6519</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 p-8 md:p-12">
+                <div class="lg:col-span-2 space-y-12">
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-900 border-b-2 border-indigo-100 pb-2 mb-4 flex items-center gap-2"><i data-lucide="user" class="w-6 h-6 text-indigo-600"></i> About</h3>
+                        <p class="text-gray-700 leading-relaxed">Results-driven Business Intelligence Manager and Data Scientist with 18+ years of experience. Armed with an M.S. in Computer Science and a deep background in Python and Oracle EPM, now pivoting toward building autonomous AI Agents.</p>
+                    </section>
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-900 border-b-2 border-indigo-100 pb-2 mb-8 flex items-center gap-2"><i data-lucide="briefcase" class="w-6 h-6 text-indigo-600"></i> Professional Experience</h3>
+                        <div class="relative border-l-2 border-gray-200 ml-3 space-y-10 pl-6">
+                            <div class="relative">
+                                <div class="timeline-dot"></div>
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-baseline mb-2">
+                                    <h4 class="text-xl font-bold text-gray-900">Reporting & Planning Process Automation</h4>
+                                    <span class="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full w-max mt-1 sm:mt-0">12/2025 – PRESENT</span>
+                                </div>
+                                <div class="text-lg font-medium text-gray-800 mb-2">Verizon <span class="text-gray-500 font-normal text-sm">| Connected Planning</span></div>
+                                <ul class="list-disc pl-5 space-y-1.5 text-gray-700">
+                                    <li>Leveraging AI to build tools that automate enterprise finance workflows.</li>
+                                    <li>Building Python data pipelines and microservices for multi-agent orchestration.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <div class="space-y-10">
+                    <section id="tc-skills-container">
+                        <h3 class="text-2xl font-bold text-gray-900 border-b-2 border-indigo-100 pb-2 mb-4 flex items-center gap-2"><i data-lucide="code-2" class="w-6 h-6 text-indigo-600"></i> Core Skills</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="skill-tag bg-indigo-100 text-indigo-800 px-3 py-1 rounded-md text-sm font-medium">Python</span>
+                            <span class="skill-tag bg-indigo-100 text-indigo-800 px-3 py-1 rounded-md text-sm font-medium">AI Agents & MCP</span>
+                            <span class="skill-tag bg-indigo-100 text-indigo-800 px-3 py-1 rounded-md text-sm font-medium">LangGraph</span>
+                            <span class="skill-tag bg-gray-100 text-gray-800 px-3 py-1 rounded-md text-sm font-medium border border-gray-200">Teradata / Hadoop</span>
+                        </div>
+                    </section>
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-900 border-b-2 border-indigo-100 pb-2 mb-4 flex items-center gap-2"><i data-lucide="award" class="w-6 h-6 text-indigo-600"></i> Certifications</h3>
+                        <ul class="space-y-4 text-gray-700">
+                            <li class="flex items-start gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"></i>
+                                <div><div class="font-semibold text-gray-900">5-Day AI Agents Intensive</div><div class="text-sm text-gray-500">Google (Nov, 2025)</div></div>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════
+         VIEW 3: Job Tracker Dashboard
+    ═══════════════════════════════════════════ -->
+    <main id="tracker-view" class="hidden flex-1 w-full transition-all relative z-0">
+
+        <!-- Top bar -->
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        Job Application Tracker
+                    </h2>
+                    <p class="text-sm text-gray-500 mt-1">Connected to Gmail &amp; Google Drive · AI-powered status classification</p>
+                </div>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <span id="tracker-last-scan" class="text-[10px] text-gray-400">Never scanned</span>
+                    <button type="button" onclick="openScanModal()" id="scan-btn" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow transition-colors text-sm cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Scan Email
+                    </button>
+                    <button type="button" onclick="openAddModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow transition-colors text-sm cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Add Manually
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+            <div class="stat-card total">
+                <div class="text-3xl font-bold text-gray-900 font-mono" id="stat-total">0</div>
+                <div class="text-sm text-gray-500 mt-1 font-medium">Total Applied</div>
+                <div class="text-xs text-gray-400 mt-0.5" id="stat-drive-count"></div>
+            </div>
+            <div class="stat-card applied" style="--accent:#3b82f6">
+                <div class="text-3xl font-bold text-blue-700 font-mono" id="stat-confirmed">0</div>
+                <div class="text-sm text-gray-500 mt-1 font-medium">Confirmed</div>
+                <div class="text-xs text-blue-400 mt-0.5">Email received</div>
+            </div>
+            <div class="stat-card interview">
+                <div class="text-3xl font-bold text-amber-600 font-mono" id="stat-in_progress">0</div>
+                <div class="text-sm text-gray-500 mt-1 font-medium">In Progress</div>
+                <div class="text-xs text-amber-400 mt-0.5">Awaiting response</div>
+            </div>
+            <div class="stat-card rejected">
+                <div class="text-3xl font-bold text-red-600 font-mono" id="stat-rejected">0</div>
+                <div class="text-sm text-gray-500 mt-1 font-medium">Rejected</div>
+                <div class="text-xs text-red-400 mt-0.5">No longer active</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+            <!-- Application Table (2/3) -->
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <!-- Filter Bar -->
+                <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3 flex-wrap">
+                    <span class="text-sm font-bold text-gray-700">Filter:</span>
+                    <div class="flex gap-2 flex-wrap" id="filter-buttons">
+                        <button type="button" onclick="setFilter('all')" data-filter="all" class="filter-btn active px-3 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer bg-gray-900 text-white border-gray-900">All</button>
+                        <button type="button" onclick="setFilter('confirmed')" data-filter="confirmed" class="filter-btn px-3 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer bg-white text-blue-600 border-blue-200 hover:border-blue-400">Confirmed</button>
+                        <button type="button" onclick="setFilter('in_progress')" data-filter="in_progress" class="filter-btn px-3 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer bg-white text-amber-600 border-amber-200 hover:border-amber-400">In Progress</button>
+                        <button type="button" onclick="setFilter('rejected')" data-filter="rejected" class="filter-btn px-3 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer bg-white text-red-600 border-red-200 hover:border-red-400">Rejected</button>
+                    </div>
+                    <div class="ml-auto">
+                        <input type="text" id="search-input" oninput="renderTable()" placeholder="Search..." class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-300 w-40">
+                    </div>
+                </div>
+                <!-- Table -->
+                <div>
+                    <div class="app-row-header">
+                        <span>Company / Role</span>
+                        <span>Date</span>
+                        <span>Status</span>
+                        <span>Next Step</span>
+                        <span></span>
+                    </div>
+                    <div id="app-table-body">
+                        <div class="empty-state">
+                            <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            <p class="font-semibold text-gray-400">No applications yet</p>
+                            <p class="text-sm mt-1">Scan your Gmail or add one manually</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="flex flex-col gap-5">
+
+                <!-- Funnel -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                    <h3 class="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">Application Funnel</h3>
+                    <div id="funnel-container">
+                        <div class="empty-state py-6">
+                            <p class="text-sm text-gray-400">No data yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes / Detail Panel -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 flex-1">
+                    <h3 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Selected Application</h3>
+                    <div id="detail-panel" class="text-sm text-gray-500">
+                        <p class="italic">Click a row to see details.</p>
+                    </div>
+                </div>
+
+                <!-- Drive Files -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+                    <div class="flex items-center justify-between mb-1">
+                        <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z"/></svg>
+                            Drive — Applications
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <a href="https://drive.google.com/drive/folders/1T0rrDH7IQHmdln0DjKo4Q-yIgqXouyfg"
+                               target="_blank" class="text-[10px] text-blue-500 hover:text-blue-700 font-semibold">Open folder ↗</a>
+                            <button type="button" onclick="loadDriveFiles()" class="text-xs text-gray-400 hover:text-gray-700 font-semibold cursor-pointer">↻</button>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mb-3">Scanning: <span class="font-mono text-blue-500">Applications/</span> folder</p>
+                    <div id="drive-files-list" class="text-sm text-gray-400 italic">Connect Google to load files.</div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCAN MODAL
+═══════════════════════════════════════════ -->
+<div id="scan-modal" class="tracker-modal no-print">
+    <div class="tracker-modal-box" style="max-width:480px;width:100%;">
+        <div class="px-5 py-4 border-b flex justify-between items-center bg-gray-50">
+            <div>
+                <h3 class="text-lg font-bold text-gray-800">Scan Gmail for Applications</h3>
+                <p class="text-xs text-gray-500 mt-0.5">AI will classify confirmation, interview, offer &amp; rejection emails.</p>
+            </div>
+            <button type="button" onclick="closeScanModal()" class="text-gray-400 hover:text-gray-600 cursor-pointer text-xl font-bold leading-none">×</button>
+        </div>
+        <div class="px-5 py-4 flex flex-col gap-3 overflow-y-auto" style="max-height:60vh;">
+            <!-- Smart query presets -->
+            <div>
+                <label class="text-xs font-semibold text-gray-600 block mb-2">Search preset</label>
+                <div class="grid grid-cols-2 gap-2 mb-3" id="preset-buttons">
+                    <button type="button" onclick="setQueryPreset('smart')"
+                        data-preset="smart"
+                        class="preset-btn active text-[11px] px-2.5 py-1.5 rounded-lg border font-semibold cursor-pointer transition-colors bg-emerald-600 text-white border-emerald-600">
+                        ⚡ Smart (recommended)
+                    </button>
+                    <button type="button" onclick="setQueryPreset('confirmations')"
+                        data-preset="confirmations"
+                        class="preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-white text-gray-600 border-gray-200 hover:border-gray-400">
+                        ✓ Confirmations only
+                    </button>
+                    <button type="button" onclick="setQueryPreset('rejections')"
+                        data-preset="rejections"
+                        class="preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-white text-gray-600 border-gray-200 hover:border-gray-400">
+                        ✗ Rejections only
+                    </button>
+                    <button type="button" onclick="setQueryPreset('interviews')"
+                        data-preset="interviews"
+                        class="preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-white text-gray-600 border-gray-200 hover:border-gray-400">
+                        📅 Interviews only
+                    </button>
+                    <button type="button" onclick="setQueryPreset('custom')"
+                        data-preset="custom"
+                        class="preset-btn text-xs px-3 py-2 rounded-lg border font-semibold cursor-pointer transition-colors bg-white text-gray-600 border-gray-200 hover:border-gray-400 col-span-2">
+                        ✎ Custom query
+                    </button>
+                </div>
+
+                <!-- Query preview / custom input -->
+                <div id="query-preview" class="bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2" style="max-height:64px;overflow-y:auto;">
+                    <p class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Gmail query</p>
+                    <p id="query-preview-text" class="text-[10px] font-mono text-slate-600 break-all leading-snug"></p>
+                </div>
+                <div id="custom-query-row" class="hidden mb-3">
+                    <input type="text" id="scan-query"
+                        class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-mono"
+                        placeholder="Enter Gmail search query..."
+                        oninput="document.getElementById('query-preview-text').textContent = this.value">
+                </div>
+                <!-- Hidden input that holds the active query for scan -->
+                <input type="hidden" id="scan-query-active" value="">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs font-semibold text-gray-600 block mb-1">Max emails to scan</label>
+                    <select id="scan-limit" class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none">
+                        <option value="25">25 emails</option>
+                        <option value="50" selected>50 emails</option>
+                        <option value="100">100 emails</option>
+                        <option value="200">200 emails</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-600 block mb-1">Date range</label>
+                    <select id="scan-date-range" class="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none">
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d" selected>Last 30 days</option>
+                        <option value="90d">Last 90 days</option>
+                        <option value="180d">Last 6 months</option>
+                        <option value="all">All time</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bg-gray-900 rounded-xl p-3 overflow-y-auto" style="min-height:80px;max-height:120px;">
+                <div id="scan-log" class="text-green-400">
+                    <span class="text-gray-500">Waiting to start scan...</span>
+                </div>
+            </div>
+            <div class="w-full">
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span id="scan-progress-label">Ready</span>
+                    <span id="scan-progress-pct">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill bg-emerald-500" id="scan-progress-bar" style="width:0%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="px-5 py-3 border-t bg-gray-50 flex justify-end gap-3">
+            <button type="button" onclick="closeScanModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium text-sm cursor-pointer">Close</button>
+            <button type="button" id="start-scan-btn" onclick="startEmailScan()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-sm shadow cursor-pointer flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Start Scan
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ADD MANUALLY MODAL -->
+<div id="add-modal" class="tracker-modal no-print">
+    <div class="tracker-modal-box">
+        <div class="px-6 py-5 border-b flex justify-between items-center bg-gray-50">
+            <h3 class="text-lg font-bold text-gray-800">Add Application Manually</h3>
+            <button type="button" onclick="closeAddModal()" class="text-gray-400 hover:text-gray-600 cursor-pointer text-xl font-bold leading-none">×</button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs font-semibold text-gray-600 block mb-1">Company *</label>
+                    <input type="text" id="manual-company" class="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Google, Meta...">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-600 block mb-1">Role *</label>
+                    <input type="text" id="manual-role" class="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Data Scientist">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs font-semibold text-gray-600 block mb-1">Date Applied</label>
+                    <input type="date" id="manual-date" class="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-300">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-600 block mb-1">Status</label>
+                    <select id="manual-status" class="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none">
+                        <option value="confirmed">Confirmed — Email received from employer</option>
+                        <option value="in_progress">In Progress — Awaiting response / needs action</option>
+                        <option value="rejected">Rejected — No longer active</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-gray-600 block mb-1">Next Step / Notes</label>
+                <textarea id="manual-notes" rows="2" class="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-300 resize-none" placeholder="Technical screen on June 1..."></textarea>
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-gray-600 block mb-1">Rejection Reason (if any)</label>
+                <input type="text" id="manual-rejection" class="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Went with another candidate...">
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+            <button type="button" onclick="closeAddModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium text-sm cursor-pointer">Cancel</button>
+            <button type="button" onclick="saveManualApp()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-sm shadow cursor-pointer">Save Application</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     EXISTING MODALS (AI Import, Tailor, Cover Letter)
+═══════════════════════════════════════════ -->
+
+<!-- AI Import -->
+<div id="ai-import-modal" class="fixed inset-0 bg-black/60 z-[10000] hidden items-center justify-center p-4 backdrop-blur-sm no-print">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden">
+        <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+            <div><h2 class="text-2xl font-bold text-gray-800">Import Resume with AI</h2><p class="text-sm text-gray-500 mt-1">Upload a resume and AI will extract your details.</p></div>
+            <button type="button" onclick="closeAiImportModal()" class="text-gray-400 hover:text-gray-600 cursor-pointer text-2xl leading-none">×</button>
+        </div>
+        <div class="p-6 overflow-y-auto">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Resume File (PDF, TXT, DOC, etc.):</label>
+            <input type="file" id="resume-file-input" accept=".pdf,.txt,.md,.doc,.docx,.rtf,.html,.csv" class="w-full border border-gray-300 rounded-lg p-2 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 cursor-pointer">
+            <div id="ai-import-loading" class="hidden mt-6 flex-col items-center justify-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div>
+                <p class="text-sm font-semibold text-gray-600">Importing data...</p>
+            </div>
+        </div>
+        <div class="p-4 border-t bg-gray-50 flex justify-end gap-3 items-center">
+            <span id="ai-import-error-msg" class="text-red-500 text-sm font-medium hidden mr-auto"></span>
+            <button type="button" onclick="closeAiImportModal()" class="px-5 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium cursor-pointer">Cancel</button>
+            <button type="button" id="process-import-btn" onclick="processResumeImport()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow cursor-pointer">Extract & Import</button>
+        </div>
+    </div>
+</div>
+
+<!-- AI Tailor -->
+<div id="ai-modal" class="fixed inset-0 bg-black/60 z-[10000] hidden items-center justify-center p-4 backdrop-blur-sm no-print">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden">
+        <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+            <div><h2 class="text-2xl font-bold text-gray-800">Tailor Resume with AI</h2><p class="text-sm text-gray-500 mt-1">Paste a job description to generate inline suggestions.</p></div>
+            <button type="button" onclick="closeAiModal()" class="text-gray-400 hover:text-gray-600 cursor-pointer text-2xl leading-none">×</button>
+        </div>
+        <div class="p-6 overflow-y-auto">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Target Job Description:</label>
+            <textarea id="job-description-input" class="w-full h-40 border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-300 outline-none resize-none" placeholder="Paste the job posting here..."></textarea>
+            <div id="ai-loading" class="hidden mt-6 flex-col items-center justify-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-3"></div>
+                <p class="text-sm font-semibold text-gray-600">Tailoring your resume...</p>
+            </div>
+        </div>
+        <div class="p-4 border-t bg-gray-50 flex justify-end gap-3 items-center">
+            <span id="ai-error-msg" class="text-red-500 text-sm font-medium hidden mr-auto"></span>
+            <button type="button" onclick="closeAiModal()" class="px-5 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium cursor-pointer">Cancel</button>
+            <button type="button" id="generate-ai-btn" onclick="generateTailoredResume()" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium shadow cursor-pointer">Generate Suggestions</button>
+        </div>
+    </div>
+</div>
+
+<!-- Cover Letter -->
+<div id="cover-letter-modal" class="fixed inset-0 bg-black/60 z-[10000] hidden items-center justify-center p-4 backdrop-blur-sm no-print">
+    <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full flex flex-col overflow-hidden max-h-[90vh]">
+        <div class="p-6 border-b flex justify-between items-center bg-gray-50 shrink-0">
+            <div><h2 class="text-2xl font-bold text-gray-800">Generate Cover Letter</h2><p class="text-sm text-gray-500 mt-1">AI will match your skills and draft a tailored cover letter.</p></div>
+            <button type="button" onclick="closeCoverLetterModal()" class="text-gray-400 hover:text-gray-600 cursor-pointer text-2xl leading-none">×</button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1 flex flex-col min-h-[300px]">
+            <div id="cl-input-area" class="shrink-0 flex flex-col">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Target Job Description:</label>
+                <textarea id="cl-job-description-input" class="w-full h-32 border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-pink-300 outline-none resize-none" placeholder="Paste the job posting here..."></textarea>
+            </div>
+            <div id="cl-loading" class="hidden mt-6 flex-col items-center justify-center py-4 flex-1">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mb-3"></div>
+                <p class="text-sm font-semibold text-gray-600">Drafting your cover letter...</p>
+            </div>
+            <div id="cl-output-container" class="hidden mt-6 flex-col flex-1">
+                <label class="block text-sm font-semibold text-pink-700 mb-2">Generated Cover Letter (Editable):</label>
+                <textarea id="cl-output-text" class="w-full flex-1 min-h-[250px] border border-pink-200 rounded-lg p-4 text-sm focus:ring-2 focus:ring-pink-300 outline-none resize-none leading-relaxed bg-pink-50/30"></textarea>
+            </div>
+        </div>
+        <div class="p-4 border-t bg-gray-50 flex justify-end gap-3 items-center shrink-0">
+            <span id="cl-error-msg" class="text-red-500 text-sm font-medium hidden mr-auto"></span>
+            <button type="button" onclick="closeCoverLetterModal()" class="px-5 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium cursor-pointer">Close</button>
+            <button type="button" id="cl-copy-btn" onclick="copyCoverLetter()" class="hidden px-5 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium shadow cursor-pointer">Copy Text</button>
+            <div id="cl-download-group" class="hidden flex items-center gap-2">
+                <select id="cl-format-select" class="border border-gray-300 rounded-lg py-2 px-3 text-sm outline-none bg-white"><option value="pdf">PDF</option><option value="txt">TXT</option><option value="html">HTML</option></select>
+                <button type="button" onclick="downloadCoverLetter()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow cursor-pointer">Save As...</button>
+            </div>
+            <button type="button" id="cl-generate-btn" onclick="generateCoverLetter()" class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-medium shadow cursor-pointer">Generate</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════ -->
+<script>
+// ============================================================
+// ============================================================
+// AUTH PROTECTION
+// ============================================================
+function checkToolsPassword(e) {
+    if (e) e.preventDefault();

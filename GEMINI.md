@@ -23,7 +23,7 @@ Before any task, scan the project directory and identify:
 - consultancy.html — main consultancy landing page
 - job-search.html (or similar) — AI job search application
 - job-tracker.html (or similar) — job application tracker
-- resume-builder.html (or similar) — AI resume builder
+- resume-builder.html — AI resume builder
 - public/predictive-planning.html — Predictive Planning project page
 - public/ — static assets (images, icons, etc.)
 - GEMINI.md — standing instructions (this file)
