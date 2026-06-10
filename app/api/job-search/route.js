@@ -18,7 +18,8 @@ const GENERIC_PATTERNS = [
 
 export async function POST(request) {
   try {
-    const { query, proximity, apiKey, model = 'gemini-2.5-flash', zipCode = '07920' } = await request.json();
+    const { query, proximity, apiKey, model = 'gemini-2.5-flash' } = await request.json();
+    const zipCode = '07920'; // Default for Basking Ridge, NJ
 
     if (!query || typeof query !== 'string') {
       return Response.json({ message: 'Missing or invalid query' }, { status: 400 });

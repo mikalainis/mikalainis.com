@@ -133,7 +133,7 @@ export default function JobSearch() {
     url.searchParams.set('app_key', ADZUNA_APP_KEY);
     url.searchParams.set('results_per_page', '20');
     
-    // Refine 'what' with precision filters
+    // Refine 'what' with precision filters and recruiter exclusion
     let refinedWhat = what;
     if (filters.experienceLevels.length > 0) {
       refinedWhat += ` (${filters.experienceLevels.join(' OR ')})`;
@@ -144,6 +144,9 @@ export default function JobSearch() {
     if (filters.companySize === 'Startup') refinedWhat += ' "startup"';
     if (filters.companySize === 'SMB') refinedWhat += ' ("small business" OR "mid-size")';
     if (filters.companySize === 'Enterprise') refinedWhat += ' ("enterprise" OR "corporation")';
+
+    // Exclude recruiters
+    refinedWhat += ' -recruiter -recruitment -staffing -headhunter -agency';
 
     url.searchParams.set('what', refinedWhat);
     if (where) url.searchParams.set('where', where);
@@ -172,26 +175,36 @@ export default function JobSearch() {
       
       const data = await resp.json();
       
-      // Map Adzuna fields to existing Job structure
-      const mappedJobs = (data.results || []).map(j => ({
-        id: j.id,
-        title: j.title,
-        company: j.company.display_name,
-        location: j.location.display_name,
-        salaryMin: j.salary_min || null,
-        salaryMax: j.salary_max || null,
-        matchScore: 0, // We could calculate this if we had the profile here
-        matchedSkills: [],
-        description: j.description,
-        applyUrl: j.redirect_url,
-        postedDate: j.created,
-        workModel: j.description.toLowerCase().includes('remote') ? 'Remote' : 
-                   j.description.toLowerCase().includes('hybrid') ? 'Hybrid' : 'On-site',
-        jobSource: j.source?.display_name || 'Adzuna',
-        distanceMiles: null, // Adzuna doesn't easily provide distance in miles from a fixed point in results
-      }));
+      // Filter patterns for recruiters
+      const recruiterPatterns = [/recruiter/i, /recruitment/i, /staffing/i, /headhunter/i, /agency/i, /search group/i, /placement/i];
 
-      const result = { jobs: mappedJobs, count: data.count };
+      // Map Adzuna fields to existing Job structure
+      const mappedJobs = (data.results || [])
+        .filter(j => {
+          const sourceName = j.source?.display_name || '';
+          const companyName = j.company?.display_name || '';
+          // Exclude if source or company name matches recruiter patterns
+          return !recruiterPatterns.some(p => p.test(sourceName) || p.test(companyName));
+        })
+        .map(j => ({
+          id: j.id,
+          title: j.title,
+          company: j.company.display_name,
+          location: j.location.display_name,
+          salaryMin: j.salary_min || null,
+          salaryMax: j.salary_max || null,
+          matchScore: 0,
+          matchedSkills: [],
+          description: j.description,
+          applyUrl: j.redirect_url,
+          postedDate: j.created,
+          workModel: j.description.toLowerCase().includes('remote') ? 'Remote' : 
+                     j.description.toLowerCase().includes('hybrid') ? 'Hybrid' : 'On-site',
+          jobSource: j.source?.display_name || 'Adzuna',
+          distanceMiles: null,
+        }));
+
+      const result = { jobs: mappedJobs, count: mappedJobs.length };
       
       localStorage.setItem(cacheKey, JSON.stringify({
         data: result,
