@@ -12,6 +12,17 @@ export default function ResumeBuilderPage() {
       <main className="bg-slate-900 min-h-screen">
         {/* Page header */}
         <div className="max-w-4xl mx-auto px-4 pt-12 pb-2">
+          <div className="mb-6">
+            <a
+              href="/"
+              className="inline-flex items-center gap-2 text-slate-400 hover:text-sky-400 transition-colors text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Portfolio
+            </a>
+          </div>
           <div className="flex items-center justify-between gap-4 mb-2">
             <div>
               <p className="text-sky-400 text-xs font-bold tracking-widest uppercase mb-2">Tools</p>

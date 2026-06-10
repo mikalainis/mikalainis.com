@@ -29,7 +29,7 @@ export default function Navigation() {
     >
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
-        <a href="#" className="flex items-center gap-3 group">
+        <a href="/" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-lg bg-sky-400 flex items-center justify-center text-slate-900 font-bold text-sm group-hover:bg-sky-300 transition-colors">
             PM
           </div>
