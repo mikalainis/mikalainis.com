@@ -130,7 +130,8 @@ After completing all file changes:
 2. Be descriptive — list the main files changed and what changed
 3. No quotes, no markdown, no bullet points — plain text one line only
 4. Tell me which files were modified and that gemini-commit.txt is ready
-5. Then stop — I will run ./git-commit.sh to push the changes
+5. Then stop — I will run ./git-commit.sh to push and VERIFY the changes
+   (The script automatically compares local and remote hashes to ensure sync)
 
 ## Terminal Safety
 - Never run commands that trigger PTY resize events
