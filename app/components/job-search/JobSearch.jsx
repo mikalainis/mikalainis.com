@@ -40,8 +40,47 @@ const DEFAULT_FILTERS = {
 };
 
 const getStoredFilters = () => {
+  if (typeof window === 'undefined') return DEFAULT_FILTERS;
   const stored = localStorage.getItem('adzuna_filters');
   return stored ? { ...DEFAULT_FILTERS, ...JSON.parse(stored) } : DEFAULT_FILTERS;
+};
+
+/**
+ * Gets the current month's Adzuna request count from localStorage.
+ * Resets to 0 if the month has changed.
+ */
+const getRequestCount = () => {
+  if (typeof window === 'undefined') return 0;
+  
+  const count = localStorage.getItem('adzuna_request_count');
+  const lastReset = localStorage.getItem('adzuna_last_reset');
+  const now = new Date();
+  
+  // Reset count if it's a new month
+  if (lastReset) {
+    const lastResetDate = new Date(lastReset);
+    if (now.getMonth() !== lastResetDate.getMonth() || now.getFullYear() !== lastResetDate.getFullYear()) {
+      localStorage.setItem('adzuna_request_count', '0');
+      localStorage.setItem('adzuna_last_reset', now.toISOString());
+      return 0;
+    }
+  } else {
+    localStorage.setItem('adzuna_last_reset', now.toISOString());
+  }
+  
+  return parseInt(count || '0', 10);
+};
+
+/**
+ * Increments and persists the Adzuna request count.
+ */
+const incrementRequestCount = () => {
+  if (typeof window === 'undefined') return 0;
+  
+  const current = getRequestCount();
+  const next = current + 1;
+  localStorage.setItem('adzuna_request_count', next.toString());
+  return next;
 };
 
 export default function JobSearch() {
