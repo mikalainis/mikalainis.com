@@ -40,9 +40,7 @@ const DEFAULT_FILTERS = {
 };
 
 const getStoredFilters = () => {
-  if (typeof window === 'undefined') return DEFAULT_FILTERS;
-  const stored = localStorage.getItem('adzuna_filters');
-  return stored ? { ...DEFAULT_FILTERS, ...JSON.parse(stored) } : DEFAULT_FILTERS;
+  return DEFAULT_FILTERS;
 };
 
 /**
@@ -50,7 +48,7 @@ const getStoredFilters = () => {
  * Resets to 0 if the month has changed.
  */
 const getRequestCount = () => {
-  if (typeof window === 'undefined') return 0;
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return 0;
   
   const count = localStorage.getItem('adzuna_request_count');
   const lastReset = localStorage.getItem('adzuna_last_reset');
@@ -75,7 +73,7 @@ const getRequestCount = () => {
  * Increments and persists the Adzuna request count.
  */
 const incrementRequestCount = () => {
-  if (typeof window === 'undefined') return 0;
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return 0;
   
   const current = getRequestCount();
   const next = current + 1;
@@ -87,7 +85,9 @@ export default function JobSearch() {
   // All jobs returned from the last search (un-filtered)
   const [allJobs, setAllJobs] = useState([]);
   // Active filter state
-  const [filters, setFilters] = useState(getStoredFilters());
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  // Tracked jobs state (loaded from localStorage)
+  const [trackedJobs, setTrackedJobs] = useState([]);
   // Search state
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -102,18 +102,42 @@ export default function JobSearch() {
   const [requestCount, setRequestCount] = useState(0);
   const [isAiSearch, setIsAiSearch] = useState(false);
 
+  // Load from localStorage on mount
   useEffect(() => {
-    setRequestCount(getRequestCount());
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      // Load filters
+      const storedFilters = localStorage.getItem('adzuna_filters');
+      if (storedFilters) {
+        try {
+          setFilters({ ...DEFAULT_FILTERS, ...JSON.parse(storedFilters) });
+        } catch (e) {
+          console.error('Failed to parse adzuna_filters', e);
+        }
+      }
+
+      // Load tracked jobs
+      const trackedRaw = localStorage.getItem('tracked_jobs') || '[]';
+      const appsRaw = localStorage.getItem('job_applications') || '[]';
+      try {
+        setTrackedJobs([...JSON.parse(trackedRaw), ...JSON.parse(appsRaw)]);
+      } catch (e) {
+        console.error('Failed to parse tracked jobs', e);
+      }
+
+      setRequestCount(getRequestCount());
+    }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('adzuna_filters', JSON.stringify(filters));
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('adzuna_filters', JSON.stringify(filters));
+    }
   }, [filters]);
 
   const fetchAdzunaJobs = useCallback(async (what, where, pageNum, forceRefresh = false) => {
     const cacheKey = `adzuna_${what}_${where}_${pageNum}_${JSON.stringify(filters)}`;
     
-    if (!forceRefresh) {
+    if (!forceRefresh && typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         const { data, timestamp } = JSON.parse(cached);
@@ -207,10 +231,12 @@ export default function JobSearch() {
 
       const result = { jobs: mappedJobs, count: mappedJobs.length };
       
-      localStorage.setItem(cacheKey, JSON.stringify({
-        data: result,
-        timestamp: Date.now()
-      }));
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: result,
+          timestamp: Date.now()
+        }));
+      }
 
       setIsCached(false);
       setLastUpdated(Date.now());
@@ -229,7 +255,10 @@ export default function JobSearch() {
     setPage(1);
     setCurrentQuery({ what, where });
 
-    const apiKey = localStorage.getItem('gemini_api_key');
+    let apiKey = '';
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      apiKey = localStorage.getItem('gemini_api_key');
+    }
     
     // Use AI Search if key is present and not forced to Adzuna
     if (apiKey && !forceAdzuna) {
@@ -296,7 +325,7 @@ export default function JobSearch() {
       
       // Persistence for tracked_jobs
       const jobToTrack = updated.find(j => j.id === jobId);
-      if (jobToTrack) {
+      if (jobToTrack && typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
         const trackedRaw = localStorage.getItem('tracked_jobs') || '[]';
         let tracked = JSON.parse(trackedRaw);
         const existsIdx = tracked.findIndex(t => t.id === jobId);
@@ -306,6 +335,15 @@ export default function JobSearch() {
           tracked.push(jobToTrack);
         }
         localStorage.setItem('tracked_jobs', JSON.stringify(tracked));
+        
+        // Update local state to reflect change immediately in UI deduplication
+        setTrackedJobs(prevTracked => {
+          const newTracked = [...prevTracked];
+          const idx = newTracked.findIndex(t => t.id === jobId);
+          if (idx > -1) newTracked[idx] = jobToTrack;
+          else newTracked.push(jobToTrack);
+          return newTracked;
+        });
       }
       
       return updated;
@@ -314,19 +352,14 @@ export default function JobSearch() {
 
   // Deduplication check against tracked_jobs and job_applications
   const jobsWithTracking = useMemo(() => {
-    const trackedRaw = localStorage.getItem('tracked_jobs') || '[]';
-    const appsRaw = localStorage.getItem('job_applications') || '[]';
-    
-    const tracked = [...JSON.parse(trackedRaw), ...JSON.parse(appsRaw)];
-    
     return allJobs.map(job => {
-      const isTracked = tracked.find(t => 
+      const isTracked = trackedJobs.find(t => 
         (t.company.toLowerCase() === job.company.toLowerCase() && t.title.toLowerCase() === job.title.toLowerCase()) ||
         t.id === job.id
       );
       return isTracked ? { ...job, savedStatus: isTracked.status || isTracked.savedStatus || 'Saved' } : job;
     });
-  }, [allJobs]);
+  }, [allJobs, trackedJobs]);
 
   // Apply filters and sort to the job list
   const filteredJobs = useMemo(() => {
