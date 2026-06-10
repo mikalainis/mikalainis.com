@@ -133,7 +133,7 @@ export default function JobSearch() {
     url.searchParams.set('app_key', ADZUNA_APP_KEY);
     url.searchParams.set('results_per_page', '20');
     
-    // Refine 'what' with precision filters and recruiter exclusion
+    // Refine 'what' with precision filters
     let refinedWhat = what;
     if (filters.experienceLevels.length > 0) {
       refinedWhat += ` (${filters.experienceLevels.join(' OR ')})`;
@@ -144,9 +144,6 @@ export default function JobSearch() {
     if (filters.companySize === 'Startup') refinedWhat += ' "startup"';
     if (filters.companySize === 'SMB') refinedWhat += ' ("small business" OR "mid-size")';
     if (filters.companySize === 'Enterprise') refinedWhat += ' ("enterprise" OR "corporation")';
-
-    // Exclude recruiters
-    refinedWhat += ' -recruiter -recruitment -staffing -headhunter -agency';
 
     url.searchParams.set('what', refinedWhat);
     if (where) url.searchParams.set('where', where);
@@ -175,16 +172,20 @@ export default function JobSearch() {
       
       const data = await resp.json();
       
-      // Filter patterns for recruiters
-      const recruiterPatterns = [/recruiter/i, /recruitment/i, /staffing/i, /headhunter/i, /agency/i, /search group/i, /placement/i];
+      // Filter patterns for recruiters (more specific to avoid blocking major boards)
+      const recruiterPatterns = [/staffing/i, /headhunter/i, /search group/i, /placement/i];
 
       // Map Adzuna fields to existing Job structure
       const mappedJobs = (data.results || [])
         .filter(j => {
           const sourceName = j.source?.display_name || '';
           const companyName = j.company?.display_name || '';
-          // Exclude if source or company name matches recruiter patterns
-          return !recruiterPatterns.some(p => p.test(sourceName) || p.test(companyName));
+          
+          // Only exclude if "recruiter" is in the COMPANY name, not the source name (to allow ZipRecruiter etc)
+          const isRecruiterSource = recruiterPatterns.some(p => p.test(sourceName));
+          const isRecruiterCompany = recruiterPatterns.some(p => p.test(companyName)) || /recruiter/i.test(companyName) || /recruitment/i.test(companyName);
+          
+          return !isRecruiterSource && !isRecruiterCompany;
         })
         .map(j => ({
           id: j.id,
