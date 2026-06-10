@@ -2723,7 +2723,12 @@ async function generateCoverLetter() {
     const resume=getScrapedResume();
     try {
         const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        const result=await fetchWithRetry(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Job: "${jobDesc}"\nResume: ${JSON.stringify(resume,null,2)}\nWrite a professional cover letter in plain text.`}]}],systemInstruction:{parts:[{text:"You are an expert cover letter writer. Output only plain text."}]}})});
+        const result=await fetchWithRetry(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:`Job: "${jobDesc}"\nResume: ${JSON.stringify(resume,null,2)}\nWrite a professional cover letter.
+Requirements:
+1. MAXIMUM 1000 characters.
+2. DO NOT include headers like [Your Name], [Your Address], [Phone], [Email], [Date], or [Hiring Manager Info].
+3. Start directly with the salutation (e.g., Dear Hiring Team,).
+4. Output only plain text.`}]}],systemInstruction:{parts:[{text:"You are an expert cover letter writer."}]}})});
         const text=result.candidates?.[0]?.content?.parts?.[0]?.text||'';
         document.getElementById('cl-output-text').value=text;
         document.getElementById('cl-output-container').classList.remove('hidden');
