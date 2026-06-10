@@ -12,7 +12,16 @@ fi
 
 echo "🚀 Starting commit and push process..."
 
-# Stage changes (including new files, excluding the script itself if needed)
+# PRE-COMMIT BUILD CHECK
+echo "🔍 Running build check to prevent Vercel failures..."
+if npm run build; then
+  echo "✅ Build successful!"
+else
+  echo "❌ ERROR: Build failed locally. Fix the errors before committing."
+  exit 1
+fi
+
+# Stage changes
 git add .
 
 # Commit
