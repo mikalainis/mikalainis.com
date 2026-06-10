@@ -6,8 +6,7 @@ as Mikalogix LLC — an AI agent development, digital workflow automation, and
 legacy system modernization consultancy based in Basking Ridge, NJ.
 
 The site is hosted at mikalainis.com and lives in a GitHub Codespace at
-/workspaces/mikalainis.com. It is a vanilla HTML/CSS/JS project with no
-framework — no React, no Vue, no build step.
+/workspaces/mikalainis.com. It is a Next.js project using React, TypeScript, and Tailwind CSS.
 
 ## Business Identity
 - Legal name: Mikalogix LLC
@@ -20,23 +19,22 @@ framework — no React, no Vue, no build step.
 
 ## Project Structure
 Before any task, scan the project directory and identify:
-- consultancy.html — main consultancy landing page
-- job-search.html (or similar) — AI job search application
-- job-tracker.html (or similar) — job application tracker
-- resume-builder.html — AI resume builder
-- public/predictive-planning.html — Predictive Planning project page
-- public/ — static assets (images, icons, etc.)
+- app/ — Next.js App Router (home page, API routes, tool pages)
+- public/ — static assets and legacy vanilla HTML pages (e.g. consultancy.html)
+- lib/ — shared utility functions and AI API integration
+- components/ — React components
 - GEMINI.md — standing instructions (this file)
 - git-commit.sh — git helper script (never run git directly)
-- .gemini/settings.local.json — Gemini CLI config
-- .vscode/settings.json — VS Code config
 
 ## Tech Stack
-- Vanilla HTML, CSS, JavaScript only — no frameworks, no build tools
-- Inline CSS and JS preferred — keep files self-contained
-- External fonts via Google Fonts only
-- No npm, no webpack, no bundlers
-- API integrations via fetch() calls in vanilla JS
+- Next.js (App Router), React, TypeScript
+- Tailwind CSS for styling
+- External fonts via Google Fonts
+- API integrations via fetch() calls in Next.js API routes or client components
+- Gemini API for AI features
+- Adzuna Jobs API for job search
+- Google Analytics 4 (GA4) for tracking
+- Lucide React for icons
 
 ## Active API Integrations
 - Adzuna Jobs API
