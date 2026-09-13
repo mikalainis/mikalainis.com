@@ -11,6 +11,11 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <title>Mikalogix | AI & Automation Consulting</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,17 +134,12 @@
             text-decoration: none;
         }
 
-        .logo-box {
+        .logo-crest {
             width: 2.25rem;
             height: 2.25rem;
-            background-color: var(--accent);
-            border-radius: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--bg);
-            font-weight: 800;
-            font-size: 0.875rem;
+            object-fit: contain;
+            display: block;
+            flex-shrink: 0;
         }
 
         .logo-text {
@@ -178,6 +178,10 @@
             align-items: center;
             overflow: hidden;
             background-color: #0F172A;
+            /* Symmetric padding keeps the desktop centring identical while
+               giving content taller than the viewport room to clear the
+               fixed navbar (2.25rem logo + 1rem padding top/bottom). */
+            padding: 6rem 0;
         }
 
         .hero-bg {
@@ -777,7 +781,7 @@
         <div class="container">
             <div class="nav-content">
                 <a href="#" class="logo" onclick="showPage('home-page'); return false;">
-                    <div class="logo-box">PM</div>
+                    <img src="/crest.png" alt="Mikalainis family crest" width="36" height="36" class="logo-crest">
                     <span class="logo-text">Mikalogix</span>
                 </a>
                 <div class="nav-links">
@@ -1161,58 +1165,33 @@
                         <a href="https://y-swim.com" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Web Design & Development' });" target="_blank" rel="noopener" class="project-link">Visit y-swim.com →</a>
                         <span style="color: #334155; margin-top: 1.25rem;">|</span>
                         <a href="https://mikalainis.com" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Web Design & Development' });" target="_blank" rel="noopener" class="project-link">Visit mikalainis.com →</a>
+                        <span style="color: #334155; margin-top: 1.25rem;">|</span>
+                        <a href="https://www.frassatinj.org/" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Web Design & Development' });" target="_blank" rel="noopener" class="project-link">Visit frassatinj.org →</a>
                     </div>
                 </div>
 
-                <!-- Project 2: AI Job Search Assistant -->
+                <!-- Project 3: Job Search Toolkit -->
                 <div class="project-card">
                     <div class="project-header">
-                        <h3>AI Job Search Assistant</h3>
+                        <h3>Job Search Toolkit</h3>
                         <span class="project-tag">AI-powered</span>
                     </div>
-                    <p class="project-meta">Gemini API · Search Grounding</p>
-                    <p class="project-desc">AI-powered job discovery tool that finds and surfaces relevant job listings based on skills, experience, and preferences — reducing manual search time.</p>
-                    <div class="tags-row">
-                        <span class="tag-pill">GenAI</span>
-                        <span class="tag-pill">Search Tool</span>
-                        <span class="tag-pill">UX</span>
-                    </div>
-                    <a href="/tools/resume-builder" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'AI Job Search Assistant' });" class="project-link">View project →</a>
-                </div>
-
-                <!-- Project 3: Job Application Tracker -->
-                <div class="project-card">
-                    <div class="project-header">
-                        <h3>Job Application Tracker</h3>
-                        <span class="project-tag">Automation</span>
-                    </div>
-                    <p class="project-meta">Gmail API · NLP · Integration</p>
-                    <p class="project-desc">Email-parsing automation that monitors your inbox, extracts application data, deduplicates records, and tracks status changes without manual entry.</p>
+                    <p class="project-meta">Gmail API · NLP · AI Generation · PDF Export</p>
+                    <p class="project-desc">Two connected tools that take the manual work out of a job search: an email-parsing tracker that monitors your inbox to extract application data, deduplicate records, and track status changes without manual entry — plus an AI resume builder that generates tailored, role-specific resumes from a master profile and exports polished documents.</p>
                     <div class="tags-row">
                         <span class="tag-pill">Gmail API</span>
                         <span class="tag-pill">NLP</span>
-                        <span class="tag-pill">Automation</span>
-                    </div>
-                    <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Job Application Tracker' });" class="project-link">View project →</a>
-                </div>
-
-                <!-- Project 4: Resume Builder -->
-                <div class="project-card">
-                    <div class="project-header">
-                        <h3>Resume Builder</h3>
-                        <span class="project-tag">AI-powered</span>
-                    </div>
-                    <p class="project-meta">AI Generation · PDF Export</p>
-                    <p class="project-desc">AI-assisted resume builder that generates tailored, role-specific resumes from a master profile — formatting, optimizing, and exporting polished documents.</p>
-                    <div class="tags-row">
                         <span class="tag-pill">AI</span>
                         <span class="tag-pill">PDF</span>
-                        <span class="tag-pill">Optimization</span>
                     </div>
-                    <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Resume Builder' });" class="project-link">View project →</a>
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
+                        <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Job Application Tracker' });" class="project-link">Open Job Tracker →</a>
+                        <span style="color: #334155; margin-top: 1.25rem;">|</span>
+                        <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Resume Builder' });" class="project-link">Open Resume Builder →</a>
+                    </div>
                 </div>
 
-                <!-- Project 5: Community & Outreach Design -->
+                <!-- Project 4: Community & Outreach Design -->
                 <div class="project-card">
                     <div class="project-header">
                         <h3>Community & Outreach Design</h3>

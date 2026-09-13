@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 const NAV_LINKS = [
   { href: '/#services', label: 'Services' },
@@ -30,9 +31,14 @@ export default function Navigation() {
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <a href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-lg bg-sky-400 flex items-center justify-center text-slate-900 font-bold text-sm group-hover:bg-sky-300 transition-colors">
-            PM
-          </div>
+          <Image
+            src="/crest.png"
+            alt="Mikalainis family crest"
+            width={36}
+            height={36}
+            className="w-9 h-9 object-contain transition-opacity group-hover:opacity-80"
+            priority
+          />
           <span className="text-slate-200 font-semibold hidden sm:block tracking-tight">
             Paulius Mikalainis
           </span>

@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <title>Résumé | Paulius Mikalainis</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,17 +53,12 @@
             margin-bottom: 1.5rem;
         }
 
-        .logo-box {
+        .logo-crest {
             width: 2.5rem;
             height: 2.5rem;
-            background-color: var(--accent);
-            border-radius: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--bg);
-            font-weight: 800;
-            font-size: 1rem;
+            object-fit: contain;
+            display: block;
+            flex-shrink: 0;
         }
 
         .brand-name {
@@ -142,7 +142,7 @@
             .job-period { border: 1px solid #ccc; color: black; }
             .highlights li { color: #333; }
             .profile-photo { filter: grayscale(100%); border: 1px solid #000; }
-            .logo-box { border: 1px solid #000; background: transparent; color: black; }
+            .logo-crest { filter: grayscale(100%); }
             header { border-bottom: 2px solid black; }
             a { color: black !important; }
         }
@@ -151,7 +151,7 @@
 <body>
     <div class="resume-container">
         <div class="branding">
-            <a href="/" class="logo-box" style="text-decoration: none;">PM</a>
+            <a href="/" class="logo-link" style="text-decoration: none;"><img src="/crest.png" alt="Mikalainis family crest" width="40" height="40" class="logo-crest"></a>
             <span class="brand-name">
                 <a href="/" style="text-decoration: none; color: inherit;">Mikalainis Consulting</a>
             </span>

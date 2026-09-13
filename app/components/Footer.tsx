@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 export default function Footer() {
   const year = new Date().getFullYear()
 
@@ -5,9 +7,13 @@ export default function Footer() {
     <footer className="border-t border-slate-800 bg-slate-900 py-8">
       <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-md bg-sky-400 flex items-center justify-center text-slate-900 font-bold text-xs">
-            PM
-          </div>
+          <Image
+            src="/crest.png"
+            alt="Mikalainis family crest"
+            width={28}
+            height={28}
+            className="w-7 h-7 object-contain"
+          />
           <span className="text-slate-500 text-sm">Paulius Mikalainis</span>
         </div>
         <p className="text-slate-600 text-xs">
