@@ -185,32 +185,6 @@
 </head>
 <body class="text-gray-800 antialiased p-4 md:p-8 min-h-screen">
 
-<!-- Password Protection Overlay -->
-<div id="password-overlay" class="fixed inset-0 bg-slate-900 z-[99999] flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-2xl p-8 shadow-2xl text-center">
-        <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mx-auto mb-6">
-            <i data-lucide="lock" class="w-8 h-8"></i>
-        </div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">Private Access</h2>
-        <p class="text-gray-500 text-sm mb-8">
-            Please enter your password to access the Resume Builder. <br>
-            <span class="text-blue-600 font-semibold mt-2 block">Contact me if you need the password.</span>
-        </p>
-        <form onsubmit="checkToolsPassword(event)" class="space-y-4 text-left">
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase tracking-tight mb-1.5 ml-1">Password</label>
-                <input type="password" id="tools-password-input" placeholder="Enter password" 
-                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" autofocus>
-            </div>
-            <div id="password-error" class="text-red-500 text-xs hidden px-1">Incorrect password</div>
-            <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all mt-2">
-                Unlock Tool
-            </button>
-        </form>
-        <a href="/" class="block mt-8 text-gray-400 hover:text-gray-600 text-sm font-medium">← Back to Portfolio</a>
-    </div>
-</div>
-
 <div class="max-w-[1400px] mx-auto w-full flex flex-col md:flex-row gap-8 items-start relative">
 
     <!-- ═══════════════════════════════════════════
@@ -929,32 +903,6 @@
 ═══════════════════════════════════════════ -->
 <script>
 // ============================================================
-// ============================================================
-// AUTH PROTECTION
-// ============================================================
-function checkToolsPassword(e) {
-    if (e) e.preventDefault();
-    const pInput = document.getElementById('tools-password-input');
-    const error = document.getElementById('password-error');
-    
-    const storedP = localStorage.getItem('tools_password') || 'admin';
-
-    if (pInput.value === storedP) {
-        localStorage.setItem('tools_authenticated', 'true');
-        document.getElementById('password-overlay').classList.add('hidden');
-        if (error) error.classList.add('hidden');
-        lucide.createIcons();
-    } else {
-        if (error) error.classList.remove('hidden');
-    }
-}
-
-function initAuth() {
-    if (localStorage.getItem('tools_authenticated') === 'true') {
-        document.getElementById('password-overlay').classList.add('hidden');
-    }
-}
-
 // GOOGLE AUTH CONFIG
 // ─ Set YOUR_CLIENT_ID below once, then deploy.
 // ─ Register your domain in Google Cloud Console →
@@ -2214,7 +2162,6 @@ async function fetchGeminiModels(silent = false) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initAuth();
     // Restore Gemini settings
     const savedKey = getLocalStorageSafe('gemini_api_key');
     if (savedKey) document.getElementById('global-api-key-input').value = savedKey;

@@ -98,6 +98,8 @@
             border: 1px solid #334155; /* slate-700 */
         }
 
+        button.btn { font-family: inherit; line-height: inherit; align-items: center; }
+
         .btn-ghost:hover {
             border-color: rgba(56, 189, 248, 0.5);
             color: var(--accent);
@@ -818,6 +820,10 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     </a>
                     <a href="#" onclick="gtag('event', 'navigation_click', { event_category: 'Navigation', event_label: 'view_projects' }); showPage('home-page', 'projects'); return false;" class="btn btn-ghost">View projects</a>
+                    <button type="button" id="share-btn" onclick="shareSite(this)" class="btn btn-ghost" aria-label="Share this site">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+                        <span class="share-label">Share</span>
+                    </button>
                 </div>
             </div>
         </section>
@@ -1184,14 +1190,26 @@
                         <span class="tag-pill">AI</span>
                         <span class="tag-pill">PDF</span>
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
-                        <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Job Application Tracker' });" class="project-link">Open Job Tracker →</a>
-                        <span style="color: #334155; margin-top: 1.25rem;">|</span>
-                        <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Resume Builder' });" class="project-link">Open Resume Builder →</a>
-                    </div>
+                    <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Resume Builder' });" class="project-link">Open Resume Builder →</a>
                 </div>
 
-                <!-- Project 4: Community & Outreach Design -->
+                <!-- Project 4: Value Plate -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>Value Plate</h3>
+                        <span class="project-tag">AI-powered</span>
+                    </div>
+                    <p class="project-meta">Python FastAPI · React · Cloud Run · Firestore · AI Vision</p>
+                    <p class="project-desc">A live grocery-savings platform that finds weekly supermarket sale prices, compares unit prices, and plans affordable family dinners around what's actually on sale. Sale data flows in through an automated scraper and an AI vision pipeline that reads printed weekly circulars, with a human review step before anything publishes. Built as a serverless microservices app on Google Cloud with preview deployments and gated releases.</p>
+                    <div class="tags-row">
+                        <span class="tag-pill">Full-stack</span>
+                        <span class="tag-pill">AI Vision</span>
+                        <span class="tag-pill">GCP</span>
+                    </div>
+                    <a href="https://valueplate.us" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Value Plate' });" target="_blank" rel="noopener" class="project-link">Visit valueplate.us →</a>
+                </div>
+
+                <!-- Project 5: Community & Outreach Design -->
                 <div class="project-card">
                     <div class="project-header">
                         <h3>Community & Outreach Design</h3>
@@ -1498,6 +1516,27 @@
                 inner.style.gap = '1rem';
             }
         });
+    </script>
+    <script>
+        function shareSite(btn) {
+            const url = 'https://www.mikalainis.com/';
+            const data = { title: 'Mikalogix | AI & Automation Consulting', text: 'AI agents, workflow automation and legacy modernization for small to mid-size businesses.', url: url };
+            if (typeof gtag === 'function') gtag('event', 'share_click', { event_category: 'Engagement', event_label: navigator.share ? 'native' : 'copy_link' });
+            if (navigator.share) {
+                navigator.share(data).catch(function () {});
+                return;
+            }
+            const label = btn.querySelector('.share-label');
+            const done = function (text) {
+                label.textContent = text;
+                setTimeout(function () { label.textContent = 'Share'; }, 2000);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () { done('Link copied'); }, function () { window.prompt('Copy this link:', url); });
+            } else {
+                window.prompt('Copy this link:', url);
+            }
+        }
     </script>
 </body>
 </html>
