@@ -88,3 +88,7 @@ public/
 - **Gemini API Key:** Required for all AI features. Obtain one from [Google AI Studio](https://aistudio.google.com/).
 - **Model:** Default is set to `gemini-2.5-flash` for speed and grounding support.
 - **Legacy:** The project previously used Claude; legacy `ANTHROPIC_API_KEY` references in `.env.local` are no longer required for current functionality.
+
+## 🚀 Deployment
+
+Pushes to `main` deploy automatically to production on Vercel (project `mikalainis-com`). If a push doesn't show a Vercel check on GitHub within a few minutes, check the Git connection under the project's Settings → Git.
