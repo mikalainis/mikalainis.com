@@ -1,0 +1,29 @@
+# Deploys public/ to Firebase Hosting (live) on every push to main.
+# Requires the repository secret FIREBASE_SERVICE_ACCOUNT (service account key JSON
+# with the "Firebase Hosting Admin" role on the mikalainis-com project).
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: firebase-live
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to live channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: mikalainis-com
+          channelId: live
