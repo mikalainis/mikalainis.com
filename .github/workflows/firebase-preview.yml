@@ -1,0 +1,25 @@
+# Deploys each pull request to a temporary Firebase preview channel and
+# comments the preview URL on the PR. Skipped for PRs from forks (no secret access).
+name: Firebase Preview
+
+on:
+  pull_request:
+
+jobs:
+  preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to preview channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: mikalainis-com
+          expires: 7d
