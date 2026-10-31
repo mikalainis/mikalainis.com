@@ -17,99 +17,143 @@
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <meta name="theme-color" content="#0B0B0C">
+    <meta name="description" content="Mikalogix builds AI agents, workflow automation and modernized systems for small and mid-size businesses. Based in Basking Ridge, NJ.">
+    <link rel="canonical" href="https://mikalainis.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Mikalogix">
+    <meta property="og:title" content="Mikalogix | AI & Automation Consulting">
+    <meta property="og:description" content="AI agents, workflow automation and legacy modernization for small and mid-size businesses.">
+    <meta property="og:url" content="https://mikalainis.com/">
+    <meta property="og:image" content="https://mikalainis.com/brand/mikalogix-og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Mikalogix logo">
+    <meta name="twitter:card" content="summary_large_image">
     <title>Mikalogix | AI & Automation Consulting</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
+        /* Mikalogix brand tokens (dark theme). Source: Mikalogix design system. */
         :root {
-            /* Mikalogix brand tokens (dark theme) */
-            --bg: #0B0B0C;               /* surface */
-            --surface: #161618;          /* surface-raised */
+            --bg: #0B0B0C;              /* surface */
+            --surface: #161618;         /* surface-raised */
             --surface-hover: #1D1D20;
-            --border: #2A2A2D;           /* border */
-            --text-primary: #FFFFFF;     /* ink */
-            --text-secondary: #A3A3A8;   /* ink-muted */
-            --text-body: #D4D4D8;
-            --accent: #3B82F6;           /* data-primary: focus, active states, links */
-            --accent-hover: #60A5FA;
+            --border: #2A2A2D;          /* border, 1px hairlines */
+            --border-strong: #3A3A3E;
+            --ink: #FFFFFF;             /* headings, links, primary buttons */
+            --ink-body: #D4D4D8;        /* running text */
+            --muted: #A3A3A8;           /* ink-muted: secondary text, eyebrows */
+            --faint: #8A8A90;           /* captions on surface only */
+            --accent: #3B82F6;          /* data-primary: focus rings and active states only */
             --accent-muted: rgba(59, 130, 246, 0.1);
-            --accent-glow: transparent;
-            --signal: #E4402F;           /* logo only */
-            --white: #FFFFFF;
-            --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --signal: #E4402F;          /* logo red; one bracketed callout per view */
+            --font-sans: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+            --nav-h: 4.5rem;
+            /* legacy aliases */
+            --text-primary: var(--ink);
+            --text-secondary: var(--muted);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html {
-            scroll-behavior: smooth;
-        }
+        html { scroll-behavior: smooth; }
 
         body {
-            font-family: 'Outfit', system-ui, sans-serif;
+            font-family: var(--font-sans);
+            font-weight: 400;
             background-color: var(--bg);
-            color: var(--text-primary);
+            color: var(--ink-body);
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Utils */
-        .container {
-            max-width: 1152px; /* 6xl */
-            margin: 0 auto;
-            padding: 0 1.5rem;
+        img, svg { display: block; }
+
+        a { color: var(--ink); }
+
+        section[id] { scroll-margin-top: var(--nav-h); }
+
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        ::selection { background: rgba(59, 130, 246, 0.3); color: var(--ink); }
+
+        /* Layout */
+        .container { max-width: 1152px; margin: 0 auto; padding: 0 1.5rem; }
+        .section-padding { padding: 6rem 0; }
+        .section-rule { border-top: 1px solid var(--border); }
+
+        .text-accent { color: var(--muted); }
+        .text-secondary { color: var(--muted); }
+
+        /* Type */
+        h1, h2, h3, h4 { color: var(--ink); }
+
+        h1 {
+            font-size: clamp(2.5rem, 6.5vw, 4rem);
+            font-weight: 300;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            margin-bottom: 1.5rem;
         }
 
-        .section-padding {
-            padding: 6rem 0;
+        h2 {
+            font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+            font-weight: 400;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+            margin-bottom: 3rem;
         }
 
-        .text-accent { color: var(--accent); }
-        .text-secondary { color: var(--text-secondary); }
-        
+        h3 { font-weight: 500; line-height: 1.3; }
+
+        .section-tag {
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 400;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .section-tag .idx {
+            font-family: var(--font-mono);
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            color: var(--ink);
+        }
+
+        /* Buttons */
         .btn {
             display: inline-flex;
-            items-center: center;
+            align-items: center;
+            justify-content: center;
             gap: 0.5rem;
+            min-height: 2.75rem;
             padding: 0.75rem 1.5rem;
             border-radius: 2px;
+            font-family: inherit;
             font-size: 0.875rem;
-            font-weight: 700;
+            font-weight: 500;
+            line-height: 1;
             text-decoration: none;
-            transition: all 0.2s;
             cursor: pointer;
-            border: none;
+            border: 1px solid transparent;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
         }
 
-        .btn-primary {
-            background-color: var(--accent);
-            color: var(--bg);
-        }
+        .btn-primary { background-color: var(--ink); color: var(--bg); }
+        .btn-primary:hover { background-color: #E4E4E7; }
 
-        .btn-primary:hover {
-            background-color: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 10px 15px -3px var(--accent-glow);
-        }
+        .btn-ghost { background-color: transparent; color: var(--ink-body); border-color: var(--border-strong); }
+        .btn-ghost:hover { border-color: var(--muted); color: var(--ink); }
 
-        .btn-ghost {
-            background-color: transparent;
-            color: #D4D4D8; /* slate-300 */
-            border: 1px solid #3A3A3E; /* slate-700 */
-        }
-
-        button.btn { font-family: inherit; line-height: inherit; align-items: center; }
-
-        .btn-ghost:hover {
-            border-color: rgba(59, 130, 246, 0.5);
-            color: var(--accent);
-            background-color: var(--accent-muted);
-        }
+        .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+        .btn-lg { padding: 1rem 2rem; font-size: 1rem; }
+        .btn-sm { min-height: 2.25rem; padding: 0.5rem 1rem; }
 
         /* Navigation */
         nav {
@@ -117,64 +161,82 @@
             top: 0;
             width: 100%;
             z-index: 50;
-            transition: all 0.3s;
+            border-bottom: 1px solid transparent;
+            transition: background-color 0.3s, border-color 0.3s;
         }
 
-        nav.scrolled {
-            background-color: rgba(11, 11, 12, 0.95);
+        nav.scrolled, nav.open {
+            background-color: rgba(11, 11, 12, 0.96);
             backdrop-filter: blur(8px);
-            border-bottom: 1px solid #2A2A2D;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border-bottom-color: var(--border);
         }
 
         .nav-content {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 0;
+            height: var(--nav-h);
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            text-decoration: none;
-        }
+        .logo { display: flex; align-items: center; text-decoration: none; }
+        .logo-mark { height: 28px; width: auto; }
 
-        .logo-crest {
-            width: 2.25rem;
-            height: 2.25rem;
-            object-fit: contain;
-            display: block;
-            flex-shrink: 0;
-        }
+        .nav-links { display: none; align-items: center; gap: 2rem; }
 
-        .logo-text {
-            color: #E4E4E7; /* slate-200 */
-            font-weight: 600;
-            letter-spacing: -0.025em;
-        }
-
-        .nav-links {
-            display: none;
-            align-items: center;
-            gap: 2rem;
-        }
-
-        @media (min-width: 768px) {
-            .nav-links { display: flex; }
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
+        .nav-links a:not(.btn) {
+            position: relative;
+            color: var(--muted);
             text-decoration: none;
             font-size: 0.875rem;
-            font-weight: 500;
-            transition: color 0.2s;
+            transition: color 0.15s;
         }
 
-        .nav-links a:hover {
-            color: var(--accent);
+        .nav-links a:not(.btn):hover, .nav-links a[aria-current="page"] { color: var(--ink); }
+
+        .nav-links a[aria-current="page"]::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -6px;
+            height: 1px;
+            background-color: var(--accent);
+        }
+
+        .menu-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.75rem;
+            height: 2.75rem;
+            background: transparent;
+            border: 1px solid var(--border-strong);
+            border-radius: 2px;
+            color: var(--ink);
+            cursor: pointer;
+        }
+
+        .menu-toggle .icon-close { display: none; }
+        nav.open .menu-toggle .icon-open { display: none; }
+        nav.open .menu-toggle .icon-close { display: block; }
+
+        .mobile-menu { display: none; border-top: 1px solid var(--border); }
+        nav.open .mobile-menu { display: block; }
+
+        .mobile-menu .container { display: flex; flex-direction: column; padding-top: 0.5rem; padding-bottom: 1.5rem; }
+
+        .mobile-menu a:not(.btn) {
+            color: var(--ink-body);
+            text-decoration: none;
+            padding: 0.875rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mobile-menu .btn { margin-top: 1.25rem; }
+
+        @media (min-width: 900px) {
+            .nav-links { display: flex; }
+            .menu-toggle, nav.open .mobile-menu { display: none; }
         }
 
         /* Hero */
@@ -184,407 +246,160 @@
             display: flex;
             align-items: center;
             overflow: hidden;
-            background-color: #0B0B0C;
-            /* Symmetric padding keeps the desktop centring identical while
-               giving content taller than the viewport room to clear the
-               fixed navbar (2.25rem logo + 1rem padding top/bottom). */
-            padding: 6rem 0;
+            padding: calc(var(--nav-h) + 3rem) 0 4rem;
         }
 
-        .hero-bg {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
+        .hero-bg { position: absolute; inset: 0; pointer-events: none; }
 
         .grid-overlay {
             position: absolute;
             inset: 0;
-            background-image: 
-                linear-gradient(rgba(59, 130, 246, 0.04) 1px, transparent 1px), 
-                linear-gradient(90deg, rgba(59, 130, 246, 0.04) 1px, transparent 1px);
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
             background-size: 64px 64px;
+            -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
         }
 
-        .glow {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            border-radius: 2px;
-            filter: blur(80px);
-            opacity: 0.05;
-        }
-
-        .glow-1 { top: 10%; left: -100px; background-color: var(--accent); }
-        .glow-2 { bottom: 10%; right: -100px; background-color: #1D4ED8; } /* blue-700 */
+        .hero .container { position: relative; width: 100%; }
 
         .availability-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            background-color: var(--accent-muted);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            color: var(--accent);
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.375rem 0.75rem;
+            gap: 0.625rem;
+            border: 1px solid var(--border-strong);
             border-radius: 2px;
-            margin-bottom: 1.75rem;
+            color: var(--muted);
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
-            letter-spacing: 0.025em;
+            padding: 0.5rem 0.875rem;
+            margin-bottom: 2rem;
         }
 
         .pulse-dot {
             width: 0.375rem;
             height: 0.375rem;
-            background-color: var(--accent);
+            background-color: var(--ink);
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        h1 {
-            font-size: 3rem;
-            font-weight: 300;
-            line-height: 1.1;
-            margin-bottom: 1rem;
-            letter-spacing: -0.025em;
-        }
-
-        @media (min-width: 768px) {
-            h1 { font-size: 4rem; }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
         .hero-subtext {
             font-size: 1.125rem;
-            color: var(--text-secondary);
+            color: var(--muted);
             max-width: 36rem;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
 
-        .hero-ctas {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
+        .hero-ctas { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 
         /* Stats */
-        .stats-strip {
-            border-top: 1px solid #2A2A2D;
-            background-color: rgba(11, 11, 12, 0.6);
-            backdrop-filter: blur(4px);
-            padding: 1.25rem 0;
-        }
+        .stats-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
-        .stat-item {
-            text-align: center;
-            border-right: 1px solid #2A2A2D;
-        }
-
-        .stat-item:last-child {
-            border-right: none;
-        }
+        .stat-item { text-align: center; padding: 1.75rem 0.5rem; border-right: 1px solid var(--border); }
+        .stat-item:last-child { border-right: none; }
 
         .stat-value {
+            font-family: var(--font-mono);
             font-size: 1.5rem;
             font-weight: 500;
-            font-family: var(--font-mono);
-            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+            color: var(--ink);
             line-height: 1;
         }
 
         .stat-label {
             font-size: 0.75rem;
-            color: #8A8A90; /* slate-500 */
-            margin-top: 0.25rem;
-        }
-
-        @media (min-width: 768px) {
-            .stat-value { font-size: 2rem; }
-        }
-
-        /* Sections */
-        .section-tag {
-            color: var(--accent);
-            font-size: 0.75rem;
-            font-weight: 700;
+            letter-spacing: 0.15em;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.75rem;
+            color: var(--faint);
+            margin-top: 0.625rem;
         }
 
-        h2 {
-            font-size: 1.875rem;
-            font-weight: 400;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-        }
-
-        .accent-bar {
-            width: 3rem;
-            height: 0.125rem;
-            background-color: var(--accent);
-            margin-bottom: 3.5rem;
-        }
+        @media (min-width: 768px) { .stat-value { font-size: 2.25rem; } }
 
         /* Services */
-        .services-grid {
-            display: grid;
-            gap: 1.5rem;
-            grid-template-columns: 1fr;
-        }
+        .services-grid { display: grid; gap: 1px; background-color: var(--border); border: 1px solid var(--border); }
+        @media (min-width: 768px) { .services-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
-        @media (min-width: 768px) {
-            .services-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-
-        .service-card {
-            background-color: var(--surface);
-            border: 1px solid var(--border);
-            padding: 2rem;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .service-card:hover {
-            border-color: rgba(59, 130, 246, 0.3);
-            background-color: var(--surface-hover);
-        }
+        .service-card { background-color: var(--bg); padding: 2.5rem 2rem; }
 
         .service-icon {
-            width: 3rem;
-            height: 3rem;
-            background-color: var(--accent-muted);
-            border-radius: 4px;
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 1px solid var(--border-strong);
+            border-radius: 2px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--accent);
-            margin-bottom: 1.5rem;
+            color: var(--ink);
+            margin-bottom: 2rem;
         }
 
-        .service-card h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            color: #FFFFFF;
-        }
+        .service-card h3 { font-size: 1.25rem; margin-bottom: 0.75rem; }
+        .service-card p { font-size: 0.9375rem; color: var(--muted); }
 
-        .service-card p {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        /* Projects */
-        .projects-grid {
-            display: grid;
-            gap: 1.5rem;
-            grid-template-columns: 1fr;
-        }
-
-        @media (min-width: 768px) {
-            .projects-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        .project-card {
-            background-color: var(--surface);
-            border: 1px solid var(--border);
-            padding: 1.5rem;
-            border-radius: 4px; /* rounded-3xl in original but this is p-6 */
-            transition: all 0.2s;
-        }
-
-        .project-card:hover {
-            border-color: rgba(59, 130, 246, 0.2);
-            background-color: var(--surface-hover);
-        }
-
-        .project-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 0.75rem;
-        }
-
-        .project-card h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #FFFFFF;
-        }
-
-        .project-tag {
-            color: var(--accent);
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .project-tag.web-design { color: #F472B6; }
-        .project-tag.community { color: #A78BFA; }
-
-        .project-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            color: var(--accent);
-            font-size: 0.875rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-            margin-top: 1.25rem;
-        }
-
-        .project-link:hover {
-            color: var(--accent-hover);
-            gap: 0.6rem;
-        }
-
-        .project-meta {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin-bottom: 1.25rem;
-        }
-
-        .project-desc {
-            font-size: 1rem;
-            color: #E4E4E7;
-            line-height: 1.6;
-        }
-
-        .tags-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .tag-pill {
-            font-size: 0.75rem;
-            background-color: #2A2A2D;
-            border: 1px solid #3A3A3E;
-            color: var(--text-secondary);
-            padding: 0.25rem 0.75rem;
-            border-radius: 2px;
-        }
-
-        /* Contact Section */
-        .contact-cta {
-            background-color: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 4rem 2rem;
-            text-align: center;
-        }
-
-        .contact-cta h2 {
-            font-size: 2.25rem;
-            margin-bottom: 1rem;
-        }
-
-        .contact-cta p {
-            color: var(--text-secondary);
-            font-size: 1.125rem;
-            margin-bottom: 2.5rem;
-            max-width: 32rem;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        /* Footer */
-        footer {
-            border-top: 1px solid #2A2A2D;
-            padding: 3rem 0;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        .footer-content {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        @media (min-width: 768px) {
-            .footer-content { flex-direction: row; }
-        }
-
-        .footer-tagline {
-            color: var(--accent);
-            font-weight: 500;
-        }
-
-        /* Stepper Styles */
+        /* How it works: stepper */
         .stepper-tabs {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
         }
 
         @media (max-width: 900px) {
             .stepper-tabs {
-                grid-template-columns: repeat(3, 1fr);
+                display: flex;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                scroll-padding-inline: 1.5rem;
+                scrollbar-width: none;
+                margin-left: -1.5rem;
+                margin-right: -1.5rem;
+                padding: 0 1.5rem 0.25rem;
             }
-            .stepper-tabs button:nth-child(n+4) {
-                display: none;
-            }
+            .stepper-tabs::-webkit-scrollbar { display: none; }
+            .step-tab { flex: 0 0 9.5rem; scroll-snap-align: start; }
         }
 
         .step-tab {
-            background-color: var(--surface);
+            background-color: transparent;
             border: 1px solid var(--border);
-            padding: 1.25rem 1rem;
-            border-radius: 4px;
+            border-radius: 2px;
+            padding: 1rem;
             cursor: pointer;
             text-align: left;
-            transition: all 0.2s;
-            color: var(--text-secondary);
-            outline: none;
+            color: var(--muted);
+            font-family: inherit;
             width: 100%;
+            transition: border-color 0.15s, background-color 0.15s;
         }
 
-        .step-tab:hover {
-            background-color: var(--surface-hover);
-            border-color: rgba(59, 130, 246, 0.3);
-        }
-
-        .step-tab.active {
-            border-color: var(--accent);
-            background-color: var(--accent-muted);
-            color: var(--text-primary);
-            box-shadow: 0 0 15px -3px var(--accent-glow);
-        }
+        .step-tab:hover { border-color: var(--border-strong); }
+        .step-tab.active { border-color: var(--accent); background-color: var(--accent-muted); color: var(--ink); }
 
         .step-tab .step-num {
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: var(--accent);
-            margin-bottom: 0.25rem;
             display: block;
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 0.375rem;
         }
 
-        .step-tab .step-name {
-            font-size: 0.9375rem;
-            font-weight: 700;
-            display: block;
-        }
-
-        .step-tab .step-duration {
-            font-size: 0.75rem;
-            opacity: 0.6;
-        }
+        .step-tab.active .step-num { color: var(--ink); }
+        .step-tab .step-name { display: block; font-size: 0.9375rem; font-weight: 500; }
+        .step-tab .step-duration { display: block; font-size: 0.75rem; color: var(--faint); margin-top: 0.125rem; }
 
         .phase-panel {
             background-color: var(--surface);
@@ -592,234 +407,270 @@
             border-radius: 4px;
             padding: 2.5rem;
             display: none;
-            animation: fadeIn 0.4s ease-out;
+            animation: fadeIn 0.3s ease-out;
         }
 
-        .phase-panel.active {
-            display: block;
-        }
+        .phase-panel.active { display: block; }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .phase-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 2.5rem;
-            gap: 2rem;
-        }
-
-        @media (max-width: 640px) {
-            .phase-header { flex-direction: column; gap: 1rem; }
-        }
+        .phase-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem; margin-bottom: 2.5rem; }
+        .phase-header > div { max-width: 600px; }
+        .phase-title { font-size: 1.75rem; font-weight: 400; margin-bottom: 0.75rem; }
 
         .phase-badge {
-            background-color: var(--accent-muted);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            color: var(--accent);
-            font-size: 0.7rem;
-            font-weight: 800;
-            padding: 0.375rem 0.875rem;
+            border: 1px solid var(--border-strong);
             border-radius: 2px;
+            color: var(--muted);
+            font-size: 0.6875rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            padding: 0.375rem 0.75rem;
             text-transform: uppercase;
             white-space: nowrap;
-            letter-spacing: 0.05em;
         }
 
-        .phase-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            margin-bottom: 3rem;
-        }
-
-        @media (max-width: 768px) {
-            .phase-content { grid-template-columns: 1fr; gap: 2rem; }
-        }
+        .phase-content { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-bottom: 2.5rem; }
 
         .phase-col h4 {
             font-size: 0.75rem;
+            font-weight: 400;
+            letter-spacing: 0.3em;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent);
+            color: var(--muted);
             margin-bottom: 1.25rem;
-            font-weight: 700;
         }
 
-        .phase-list {
-            list-style: none;
-            padding: 0;
-        }
+        .phase-list { list-style: none; }
 
         .phase-list li {
             position: relative;
             padding-left: 1.5rem;
             margin-bottom: 0.875rem;
             font-size: 0.9375rem;
-            color: #D4D4D8;
+            color: var(--ink-body);
         }
 
-        .phase-list li::before {
-            content: "→";
-            position: absolute;
-            left: 0;
-            color: var(--accent);
-            font-weight: bold;
-        }
+        .phase-list li::before { content: "→"; position: absolute; left: 0; color: var(--faint); }
 
         .phase-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 1.5rem;
             padding-top: 2rem;
-            border-top: 1px solid rgba(42, 42, 45, 0.3);
+            border-top: 1px solid var(--border);
+        }
+
+        .phase-outcome { display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem; color: var(--muted); }
+        .phase-outcome svg { color: var(--ink); flex-shrink: 0; }
+        .phase-outcome strong { color: var(--ink); font-weight: 500; }
+        .phase-nav { display: flex; gap: 0.75rem; }
+
+        @media (max-width: 768px) {
+            .phase-panel { padding: 1.75rem 1.25rem; }
+            .phase-content { grid-template-columns: 1fr; gap: 2rem; }
         }
 
         @media (max-width: 640px) {
-            .phase-footer { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+            .phase-header { flex-direction: column; gap: 1rem; }
+            .phase-footer { flex-direction: column; align-items: flex-start; }
         }
 
-        .phase-outcome {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
+        /* Projects */
+        .projects-grid { display: grid; gap: 1.5rem; }
+        @media (min-width: 768px) { .projects-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+        .project-card {
             display: flex;
-            align-items: center;
-            gap: 0.75rem;
+            flex-direction: column;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2rem;
         }
 
-        .phase-outcome strong {
-            color: var(--text-primary);
-            font-weight: 600;
+        .project-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem; }
+        .project-card h3 { font-size: 1.25rem; }
+
+        .project-tag {
+            flex-shrink: 0;
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding-top: 0.375rem;
         }
 
-        /* Page Navigation Styles */
-        .page {
-            display: none;
-            animation: fadeIn 0.4s ease-out;
+        .project-meta { font-size: 0.8125rem; color: var(--faint); margin-bottom: 1.25rem; }
+        .project-desc { font-size: 0.9375rem; color: var(--ink-body); }
+
+        .tags-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+
+        .tag-pill {
+            font-size: 0.75rem;
+            border: 1px solid var(--border-strong);
+            color: var(--muted);
+            padding: 0.1875rem 0.625rem;
+            border-radius: 2px;
         }
 
-        .page.active {
-            display: block;
+        .project-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1.5rem;
+            margin-top: auto;
+            padding-top: 1.75rem;
         }
 
-        .nav-links a[aria-current="page"] {
-            color: var(--accent);
-            position: relative;
+        .project-link {
+            color: var(--ink);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: underline;
+            text-decoration-color: var(--border-strong);
+            text-underline-offset: 0.3em;
+            transition: text-decoration-color 0.15s;
         }
 
-        .nav-links a[aria-current="page"]::after {
-            content: "";
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: var(--accent);
-        }
+        .project-link:hover { text-decoration-color: var(--ink); }
 
-        /* Use Case Styles */
-        .use-cases-grid {
-            display: grid;
-            gap: 2rem;
-            grid-template-columns: 1fr;
-        }
+        /* Use cases */
+        .use-cases-grid { display: grid; gap: 1.5rem; }
 
         .use-case-card {
             background-color: var(--surface);
             border: 1px solid var(--border);
-            padding: 2.5rem;
             border-radius: 4px;
-            transition: all 0.2s;
+            padding: 2.5rem;
         }
 
-        .use-case-card:hover {
-            border-color: rgba(59, 130, 246, 0.3);
-            background-color: var(--surface-hover);
-        }
-
-        .uc-title {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-            color: var(--text-primary);
-        }
-
-        .uc-sections {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
+        .use-case-card .project-tag { display: block; padding: 0; margin-bottom: 0.75rem; }
+        .uc-title { font-size: 1.75rem; font-weight: 400; margin-bottom: 2rem; }
+        .uc-sections { display: grid; gap: 2rem; }
+        @media (min-width: 900px) { .uc-sections { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
         .uc-section h4 {
             font-size: 0.75rem;
+            font-weight: 400;
+            letter-spacing: 0.3em;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent);
+            color: var(--muted);
             margin-bottom: 0.75rem;
-            font-weight: 700;
         }
 
-        .uc-section p {
-            font-size: 1rem;
-            color: #D4D4D8;
-            line-height: 1.6;
-        }
+        .uc-section p { font-size: 0.9375rem; color: var(--ink-body); }
 
         .uc-meta {
-            margin-top: 1.5rem;
+            margin-top: 2rem;
             padding-top: 1.5rem;
-            border-top: 1px solid rgba(42, 42, 45, 0.3);
-            font-size: 0.875rem;
-            color: var(--text-secondary);
+            border-top: 1px solid var(--border);
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            color: var(--muted);
         }
 
-        .uc-meta strong {
-            color: var(--accent);
+        .uc-meta strong { color: var(--ink); font-weight: 500; }
+
+        @media (max-width: 640px) { .use-case-card { padding: 1.75rem 1.25rem; } }
+
+        /* Privacy */
+        .privacy-card {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 3rem;
         }
 
-        /* ---- Mikalogix brand layer ---- */
-        .logo-mark { height: 28px; width: auto; display: block; }
-        .glow { display: none; }
-        .grid-overlay {
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        .privacy-card .updated { color: var(--muted); margin-bottom: 2rem; font-size: 0.875rem; }
+        .privacy-card .uc-section + .uc-section { margin-top: 2.5rem; }
+        .privacy-back { text-align: center; margin-top: 3rem; }
+        @media (max-width: 640px) { .privacy-card { padding: 1.75rem 1.25rem; } }
+
+        /* Contact call-out: the one bracketed element per view */
+        .contact-cta { position: relative; text-align: center; padding: 4.5rem 2.5rem; }
+
+        .contact-cta::before, .contact-cta::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1.5rem;
+            border: 1.5px solid var(--signal);
         }
-        /* Primary buttons are ink on black; blue stays for focus and active states */
-        .btn-primary { background-color: var(--text-primary); color: var(--bg); }
-        .btn-primary:hover { background-color: #E4E4E7; box-shadow: none; }
-        .btn-ghost { color: var(--text-body); border-color: var(--border); }
-        .btn-ghost:hover { border-color: var(--text-secondary); color: var(--text-primary); background-color: transparent; }
-        nav.scrolled { box-shadow: none; }
-        /* Eyebrows: wide-tracked muted capitals */
-        .section-tag, .phase-col h4, .uc-section h4 {
-            color: var(--text-secondary); font-weight: 400; letter-spacing: 0.3em;
+
+        .contact-cta::before { left: 0; border-right: none; }
+        .contact-cta::after { right: 0; border-left: none; }
+
+        .contact-cta h2 { margin-bottom: 1rem; }
+        .contact-cta p { color: var(--muted); font-size: 1.125rem; max-width: 32rem; margin: 0 auto 2.5rem; }
+        .contact-cta .contact-alt { font-size: 0.875rem; color: var(--faint); margin: 1.25rem auto 0; }
+        .contact-cta .contact-alt a { color: var(--ink-body); }
+        .section-cta { margin-top: 6rem; }
+
+        /* Footer */
+        footer { border-top: 1px solid var(--border); padding: 3rem 0; color: var(--muted); font-size: 0.875rem; }
+
+        .footer-content { display: flex; flex-direction: column; gap: 1.75rem; align-items: center; text-align: center; }
+
+        .footer-brand img { margin: 0 auto 0.75rem; }
+
+        .footer-tagline { font-size: 0.75rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+
+        .footer-legal a { color: var(--muted); font-size: 0.8125rem; text-decoration: none; }
+        .footer-legal a:hover { color: var(--ink); }
+        .footer-legal div { margin-bottom: 0.375rem; }
+
+        @media (min-width: 768px) {
+            .footer-content { flex-direction: row; justify-content: space-between; text-align: left; }
+            .footer-brand img { margin: 0 0 0.75rem; }
+            .footer-legal { text-align: right; }
         }
-        .footer-tagline {
-            color: var(--text-secondary); font-weight: 400; font-size: 0.75rem;
-            letter-spacing: 0.3em; text-transform: uppercase;
+
+        /* Cookie banner */
+        .cookie-banner {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background-color: var(--bg);
+            border-top: 1px solid var(--border);
+            padding: 1.25rem 0;
         }
-        .accent-bar { background-color: var(--text-primary); width: 2rem; height: 1px; }
-        h1 .text-accent { color: var(--text-secondary); }
-        .availability-badge {
-            background-color: transparent; border-color: var(--border);
-            color: var(--text-secondary); letter-spacing: 0.2em; font-weight: 400;
+
+        .cookie-inner { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+        .cookie-inner p { font-size: 0.875rem; color: var(--muted); line-height: 1.5; }
+        .cookie-inner a { color: var(--ink); margin-left: 0.25rem; }
+
+        @media (max-width: 640px) {
+            .cookie-inner { flex-direction: column; align-items: flex-start; gap: 1rem; }
         }
-        .pulse-dot { background-color: var(--text-primary); }
-        .service-icon { color: var(--text-primary); background-color: transparent; border: 1px solid var(--border); }
-        .service-card h3, .project-card h3 { font-weight: 500; }
-        .uc-title { font-weight: 400; }
-        .step-tab .step-name { font-weight: 500; }
-        .step-tab .step-num { font-family: var(--font-mono); font-weight: 500; }
-        .step-tab.active { box-shadow: none; }
-        .project-tag.web-design, .project-tag.community { color: var(--text-secondary); }
-        .tag-pill { background-color: transparent; border-color: var(--border); }
-        .phase-badge { font-weight: 500; }
-        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-        ::selection { background: rgba(59, 130, 246, 0.3); color: #FFFFFF; }
+
+        /* Views */
+        .page { display: none; animation: fadeIn 0.3s ease-out; }
+        .page.active { display: block; }
+        .page-top { padding-top: calc(var(--nav-h) + 4rem); }
+
+        @media (max-width: 640px) {
+            .section-padding { padding: 4.5rem 0; }
+            .service-card { padding: 2rem 1.5rem; }
+            .project-card { padding: 1.5rem; }
+            .contact-cta { padding: 3.5rem 2rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -834,12 +685,26 @@
                 </a>
                 <div class="nav-links">
                     <a href="#" onclick="showPage('home-page', 'services'); return false;">Services</a>
-                    <a href="#" onclick="showPage('home-page', 'how-it-works'); return false;">How It Works</a>
-                    <a href="#" id="nav-use-cases" onclick="showPage('use-cases-page'); return false;">Use Cases</a>
+                    <a href="#" onclick="showPage('home-page', 'how-it-works'); return false;">How it works</a>
+                    <a href="#" onclick="showPage('use-cases-page'); return false;">Use cases</a>
                     <a href="#" onclick="showPage('home-page', 'projects'); return false;">Projects</a>
                     <a href="/resume.html">Résumé</a>
-                    <a href="#" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'nav_get_in_touch' }); showPage('home-page', 'contact'); return false;" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Get In Touch</a>
+                    <a href="#" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'nav_get_in_touch' }); showPage('home-page', 'contact'); return false;" class="btn btn-ghost btn-sm">Get in touch</a>
                 </div>
+                <button type="button" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu" onclick="toggleMenu()">
+                    <svg class="icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+                    <svg class="icon-close" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="mobile-menu" id="mobile-menu">
+            <div class="container">
+                <a href="#" onclick="showPage('home-page', 'services'); return false;">Services</a>
+                <a href="#" onclick="showPage('home-page', 'how-it-works'); return false;">How it works</a>
+                <a href="#" onclick="showPage('use-cases-page'); return false;">Use cases</a>
+                <a href="#" onclick="showPage('home-page', 'projects'); return false;">Projects</a>
+                <a href="/resume.html">Résumé</a>
+                <a href="#" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'mobile_get_in_touch' }); showPage('home-page', 'contact'); return false;" class="btn btn-primary">Get in touch</a>
             </div>
         </div>
     </nav>
@@ -850,8 +715,6 @@
         <section class="hero">
             <div class="hero-bg">
                 <div class="grid-overlay"></div>
-                <div class="glow glow-1"></div>
-                <div class="glow glow-2"></div>
             </div>
             <div class="container">
                 <div class="availability-badge">
@@ -897,9 +760,8 @@
     <!-- Services -->
     <section id="services" class="section-padding">
         <div class="container">
-            <p class="section-tag">Services</p>
-            <h2>Strategic AI & Systems Engineering</h2>
-            <div class="accent-bar"></div>
+            <p class="section-tag"><span class="idx">01</span>Services</p>
+            <h2>Strategic AI and systems engineering</h2>
             
             <div class="services-grid">
                 <!-- Service 1 -->
@@ -931,11 +793,10 @@
     </section>
 
     <!-- How It Works -->
-    <section id="how-it-works" class="section-padding" style="border-top: 1px solid #2A2A2D;">
+    <section id="how-it-works" class="section-padding section-rule">
         <div class="container">
-            <p class="section-tag">How it works</p>
+            <p class="section-tag"><span class="idx">02</span>How it works</p>
             <h2>A proven path from idea to impact</h2>
-            <div class="accent-bar"></div>
 
             <!-- Tabs -->
             <div class="stepper-tabs">
@@ -971,8 +832,8 @@
                 <!-- 01 DISCOVER -->
                 <div class="phase-panel active">
                     <div class="phase-header">
-                        <div style="max-width: 600px;">
-                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Business & process discovery</h3>
+                        <div>
+                            <h3 class="phase-title">Business & process discovery</h3>
                             <p class="text-secondary">We map your current workflows, identify bottlenecks, and assess which processes are strong candidates for automation or AI augmentation.</p>
                         </div>
                         <span class="phase-badge">Free consultation</span>
@@ -999,11 +860,11 @@
                     </div>
                     <div class="phase-footer">
                         <div class="phase-outcome">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
                             <span>Outcome: <strong>Clear picture of what to build and in what order</strong></span>
                         </div>
-                        <div style="display: flex; gap: 0.75rem;">
-                            <button class="btn btn-ghost" disabled style="opacity: 0.5; cursor: not-allowed;">Prev</button>
+                        <div class="phase-nav">
+                            <button class="btn btn-ghost" disabled>Prev</button>
                             <button class="btn btn-primary" onclick="gtag('event', 'stepper_next', { event_category: 'Engagement', event_label: 'phase_1' }); showPhase(1)">Next</button>
                         </div>
                     </div>
@@ -1012,8 +873,8 @@
                 <!-- 02 DESIGN -->
                 <div class="phase-panel">
                     <div class="phase-header">
-                        <div style="max-width: 600px;">
-                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Solution architecture & planning</h3>
+                        <div>
+                            <h3 class="phase-title">Solution architecture & planning</h3>
                             <p class="text-secondary">We design the technical architecture for each initiative — choosing the right tools, integration patterns, and AI models before writing a line of code.</p>
                         </div>
                         <span class="phase-badge">Architecture</span>
@@ -1040,10 +901,10 @@
                     </div>
                     <div class="phase-footer">
                         <div class="phase-outcome">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
                             <span>Outcome: <strong>Approved architecture ready for development</strong></span>
                         </div>
-                        <div style="display: flex; gap: 0.75rem;">
+                        <div class="phase-nav">
                             <button class="btn btn-ghost" onclick="showPhase(0)">Prev</button>
                             <button class="btn btn-primary" onclick="gtag('event', 'stepper_next', { event_category: 'Engagement', event_label: 'phase_2' }); showPhase(2)">Next</button>
                         </div>
@@ -1053,8 +914,8 @@
                 <!-- 03 BUILD -->
                 <div class="phase-panel">
                     <div class="phase-header">
-                        <div style="max-width: 600px;">
-                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Iterative development & testing</h3>
+                        <div>
+                            <h3 class="phase-title">Iterative development & testing</h3>
                             <p class="text-secondary">Agents, automations, and microservices are built in short sprints with working demos at each checkpoint. You see progress weekly.</p>
                         </div>
                         <span class="phase-badge">Core phase</span>
@@ -1081,10 +942,10 @@
                     </div>
                     <div class="phase-footer">
                         <div class="phase-outcome">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
                             <span>Outcome: <strong>Fully tested system ready for deployment</strong></span>
                         </div>
-                        <div style="display: flex; gap: 0.75rem;">
+                        <div class="phase-nav">
                             <button class="btn btn-ghost" onclick="showPhase(1)">Prev</button>
                             <button class="btn btn-primary" onclick="gtag('event', 'stepper_next', { event_category: 'Engagement', event_label: 'phase_3' }); showPhase(3)">Next</button>
                         </div>
@@ -1094,8 +955,8 @@
                 <!-- 04 DEPLOY -->
                 <div class="phase-panel">
                     <div class="phase-header">
-                        <div style="max-width: 600px;">
-                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Deployment & team onboarding</h3>
+                        <div>
+                            <h3 class="phase-title">Deployment & team onboarding</h3>
                             <p class="text-secondary">We deploy to production with a structured rollout plan, train your team, and run a live monitoring period before full handoff.</p>
                         </div>
                         <span class="phase-badge">Go-live</span>
@@ -1122,10 +983,10 @@
                     </div>
                     <div class="phase-footer">
                         <div class="phase-outcome">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
                             <span>Outcome: <strong>System live, team confident, baseline metrics captured</strong></span>
                         </div>
-                        <div style="display: flex; gap: 0.75rem;">
+                        <div class="phase-nav">
                             <button class="btn btn-ghost" onclick="showPhase(2)">Prev</button>
                             <button class="btn btn-primary" onclick="gtag('event', 'stepper_next', { event_category: 'Engagement', event_label: 'phase_4' }); showPhase(4)">Next</button>
                         </div>
@@ -1135,8 +996,8 @@
                 <!-- 05 OPTIMIZE -->
                 <div class="phase-panel">
                     <div class="phase-header">
-                        <div style="max-width: 600px;">
-                            <h3 style="font-size: 1.75rem; margin-bottom: 0.75rem;">Measurement & continuous improvement</h3>
+                        <div>
+                            <h3 class="phase-title">Measurement & continuous improvement</h3>
                             <p class="text-secondary">We track KPIs against the discovery baseline, identify new automation opportunities, and evolve the system as your business grows.</p>
                         </div>
                         <span class="phase-badge">Continuous</span>
@@ -1163,10 +1024,10 @@
                     </div>
                     <div class="phase-footer">
                         <div class="phase-outcome">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-accent"><path d="M20 6L9 17l-5-5"/></svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
                             <span>Outcome: <strong>Compounding value as the system learns and expands</strong></span>
                         </div>
-                        <div style="display: flex; gap: 0.75rem;">
+                        <div class="phase-nav">
                             <button class="btn btn-ghost" onclick="showPhase(3)">Prev</button>
                             <a href="#contact" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'book_discovery_call' });" class="btn btn-primary">Book a free discovery call</a>
                         </div>
@@ -1177,11 +1038,10 @@
     </section>
 
     <!-- Featured Projects -->
-    <section id="projects" class="section-padding" style="background-color: rgba(11, 11, 12, 0.5); border-top: 1px solid #2A2A2D;">
+    <section id="projects" class="section-padding section-rule">
         <div class="container">
-            <p class="section-tag">Selected Work</p>
+            <p class="section-tag"><span class="idx">03</span>Selected work</p>
             <h2>Proven business impact</h2>
-            <div class="accent-bar"></div>
 
             <div class="projects-grid">
                 <!-- Project 1: Predictive Planning -->
@@ -1197,7 +1057,9 @@
                         <span class="tag-pill">Add-on</span>
                         <span class="tag-pill">Data</span>
                     </div>
-                    <a href="/predictive-planning.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Predictive Planning' });" class="project-link">View project →</a>
+                    <div class="project-links">
+                        <a href="/predictive-planning.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Predictive Planning' });" class="project-link">View project →</a>
+                    </div>
                 </div>
 
                 <!-- Project 2: Web Design & Development -->
@@ -1213,11 +1075,9 @@
                         <span class="tag-pill">CMS</span>
                         <span class="tag-pill">Design</span>
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
+                    <div class="project-links">
                         <a href="https://y-swim.com" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Web Design & Development' });" target="_blank" rel="noopener" class="project-link">Visit y-swim.com →</a>
-                        <span style="color: #3A3A3E; margin-top: 1.25rem;">|</span>
                         <a href="https://mikalainis.com" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Web Design & Development' });" target="_blank" rel="noopener" class="project-link">Visit mikalainis.com →</a>
-                        <span style="color: #3A3A3E; margin-top: 1.25rem;">|</span>
                         <a href="https://www.frassatinj.org/" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Web Design & Development' });" target="_blank" rel="noopener" class="project-link">Visit frassatinj.org →</a>
                     </div>
                 </div>
@@ -1236,7 +1096,9 @@
                         <span class="tag-pill">AI</span>
                         <span class="tag-pill">PDF</span>
                     </div>
-                    <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Resume Builder' });" class="project-link">Open Resume Builder →</a>
+                    <div class="project-links">
+                        <a href="/tools/resume-builder.html" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Resume Builder' });" class="project-link">Open Resume Builder →</a>
+                    </div>
                 </div>
 
                 <!-- Project 4: Value Plate -->
@@ -1252,7 +1114,9 @@
                         <span class="tag-pill">AI Vision</span>
                         <span class="tag-pill">GCP</span>
                     </div>
-                    <a href="https://valueplate.us" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Value Plate' });" target="_blank" rel="noopener" class="project-link">Visit valueplate.us →</a>
+                    <div class="project-links">
+                        <a href="https://valueplate.us" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Value Plate' });" target="_blank" rel="noopener" class="project-link">Visit valueplate.us →</a>
+                    </div>
                 </div>
 
                 <!-- Project 5: Community & Outreach Design -->
@@ -1268,9 +1132,8 @@
                         <span class="tag-pill">Community</span>
                         <span class="tag-pill">Branding</span>
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
+                    <div class="project-links">
                         <a href="https://sjmoc.org" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Community & Outreach Design' });" target="_blank" rel="noopener" class="project-link">Visit sjmoc.org →</a>
-                        <span style="color: #3A3A3E; margin-top: 1.25rem;">|</span>
                         <a href="https://kofc2393.org" onclick="gtag('event', 'project_click', { event_category: 'Projects', event_label: 'Community & Outreach Design' });" target="_blank" rel="noopener" class="project-link">Visit kofc2393.org →</a>
                     </div>
                 </div>
@@ -1284,10 +1147,11 @@
             <div class="contact-cta">
                 <h2>Ready to modernize how you work?</h2>
                 <p>Let's talk about what's slowing your business down and how to fix it.</p>
-                <a href="mailto:pmikalainis@gmail.com" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'book_discovery_call' });" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1rem;">
+                <a href="mailto:pmikalainis@gmail.com" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'book_discovery_call' });" class="btn btn-primary btn-lg">
                     Book a free discovery call
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 0.5rem;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 </a>
+                <p class="contact-alt">Or email <a href="mailto:pmikalainis@gmail.com">pmikalainis@gmail.com</a></p>
             </div>
         </div>
     </section>
@@ -1295,11 +1159,10 @@
 
 <!-- Use Cases Page -->
 <div id="use-cases-page" class="page">
-    <section class="section-padding">
+    <section class="section-padding page-top">
         <div class="container">
-            <p class="section-tag">Use Cases</p>
+            <p class="section-tag">Use cases</p>
             <h2>Real problems, proven solutions</h2>
-            <div class="accent-bar"></div>
 
             <div class="use-cases-grid">
                 <!-- Use Case 1 -->
@@ -1373,12 +1236,12 @@
             </div>
 
             <!-- CTA -->
-            <div class="contact-cta" style="margin-top: 6rem;">
+            <div class="contact-cta section-cta">
                 <h2>See yourself in one of these scenarios?</h2>
                 <p>Let's talk through your situation and map out what's possible.</p>
-                <a href="#" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'book_discovery_call' }); showPage('home-page', 'contact'); return false;" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1rem;">
+                <a href="#" onclick="gtag('event', 'cta_click', { event_category: 'CTA', event_label: 'book_discovery_call' }); showPage('home-page', 'contact'); return false;" class="btn btn-primary btn-lg">
                     Book a free discovery call
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 0.5rem;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 </a>
             </div>
         </div>
@@ -1387,43 +1250,42 @@
 
 <!-- Privacy Policy Page -->
 <div id="privacy-page" class="page">
-    <section class="section-padding">
+    <section class="section-padding page-top">
         <div class="container">
             <p class="section-tag">Privacy</p>
             <h2>Privacy Policy</h2>
-            <div class="accent-bar"></div>
             
-            <div class="use-case-card" style="max-width: 800px; margin: 0 auto; background-color: var(--surface); border: 1px solid var(--border); padding: 3rem; border-radius: 4px;">
-                <p class="text-secondary" style="margin-bottom: 2rem;">Last updated: May 27, 2026</p>
+            <div class="privacy-card">
+                <p class="updated">Last updated: May 27, 2026</p>
                 
-                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                <div class="uc-section">
                     <h4>Introduction</h4>
                     <p>Mikalogix LLC ("we", "us", or "our") operates mikalainis.com. This page explains how we collect and use information when you visit our site.</p>
                 </div>
 
-                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                <div class="uc-section">
                     <h4>Information We Collect</h4>
                     <p>We use Google Analytics 4 to collect anonymized data about how visitors interact with our site. This includes pages visited, time spent on each page, general geographic location, device type, and traffic source. We do not collect your name, email, or any personally identifiable information unless you contact us directly.</p>
                 </div>
 
-                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                <div class="uc-section">
                     <h4>How We Use This Information</h4>
                     <p>Analytics data helps us understand which content is most useful to visitors so we can improve the site. We do not sell or share this data with third parties.</p>
                 </div>
 
-                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                <div class="uc-section">
                     <h4>Cookies</h4>
                     <p>Google Analytics uses cookies — small text files stored in your browser — to distinguish visitors and track sessions. You can disable cookies in your browser settings at any time.</p>
                 </div>
 
-                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                <div class="uc-section">
                     <h4>Third-Party Services</h4>
                     <p>We use Google Analytics, operated by Google LLC. You can review Google's privacy policy at policies.google.com/privacy.</p>
                 </div>
 
-                <div class="uc-section" style="margin-bottom: 2.5rem;">
+                <div class="uc-section">
                     <h4>Contact</h4>
-                    <p>If you have any questions about this privacy policy, contact us at <!-- INSERT CONTACT EMAIL -->.</p>
+                    <p>If you have any questions about this privacy policy, contact us at <a href="mailto:pmikalainis@gmail.com">pmikalainis@gmail.com</a>.</p>
                 </div>
 
                 <div class="uc-section">
@@ -1432,7 +1294,7 @@
                 </div>
             </div>
 
-            <div style="text-align: center; margin-top: 3rem;">
+            <div class="privacy-back">
                 <a href="#" onclick="showPage('home-page'); return false;" class="btn btn-ghost">Back to Home</a>
             </div>
         </div>
@@ -1443,32 +1305,27 @@
     <footer>
         <div class="container">
             <div class="footer-content">
-                <div>
-                    <img src="/brand/mikalogix-secondary-dark.svg" alt="Mikalogix" width="177" height="30" style="display: block; margin-bottom: 0.75rem;">
-                    <p>Mikalogix LLC · Basking Ridge, NJ</p>
+                <div class="footer-brand">
+                    <img src="/brand/mikalogix-secondary-dark.svg" alt="Mikalogix" width="177" height="30">
+                    <p>Basking Ridge, NJ</p>
                 </div>
-                <div class="footer-tagline">
-                    AI · Automation · Modernization
-                </div>
-                <div style="text-align: right;">
-                    <div style="margin-bottom: 0.5rem;">
-                        &copy; 2026 Mikalogix. All rights reserved.
-                    </div>
-                    <a href="#" onclick="showPage('privacy-page'); return false;" style="color: var(--text-secondary); text-decoration: none; font-size: 0.75rem; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Privacy Policy</a>
+                <div class="footer-tagline">AI · Automation · Modernization</div>
+                <div class="footer-legal">
+                    <div>&copy; 2026 Mikalogix LLC</div>
+                    <a href="#" onclick="showPage('privacy-page'); return false;">Privacy policy</a>
                 </div>
             </div>
         </div>
     </footer>
 
     <!-- Cookie Consent Banner -->
-    <div id="cookie-banner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background-color: #0B0B0C; border-top: 1px solid rgba(42, 42, 45, 0.7); padding: 1.25rem; z-index: 40; box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.3);">
+    <div id="cookie-banner" class="cookie-banner" role="region" aria-label="Cookie notice">
         <div class="container">
-            <div style="display: flex; flex-direction: row; gap: 2rem; align-items: center; justify-content: space-between;">
-                <p style="font-size: 0.875rem; color: #A3A3A8; margin: 0; line-height: 1.5;">
-                    We use cookies to analyze site traffic via Google Analytics. By continuing to use this site you accept our use of cookies.
-                    <a href="#" onclick="showPage('privacy-page'); return false;" style="color: var(--accent); text-decoration: underline; margin-left: 0.5rem;">Privacy Policy</a>
+            <div class="cookie-inner">
+                <p>We use cookies to analyze site traffic via Google Analytics. By continuing to use this site you accept our use of cookies.
+                    <a href="#" onclick="showPage('privacy-page'); return false;">Privacy policy</a>
                 </p>
-                <button id="accept-cookies" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.875rem; white-space: nowrap;">Accept</button>
+                <button id="accept-cookies" class="btn btn-primary btn-sm">Accept</button>
             </div>
         </div>
     </div>
@@ -1505,10 +1362,21 @@
             }
         }
 
+        // Mobile menu
+        function toggleMenu(force) {
+            const nav = document.getElementById('navbar');
+            const open = typeof force === 'boolean' ? force : !nav.classList.contains('open');
+            nav.classList.toggle('open', open);
+            const btn = nav.querySelector('.menu-toggle');
+            btn.setAttribute('aria-expanded', String(open));
+            btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        }
+
         // Page Navigation
         function showPage(pageId, sectionId) {
+            toggleMenu(false);
             const pages = document.querySelectorAll('.page');
-            const navLinks = document.querySelectorAll('.nav-links a');
+            const navLinks = document.querySelectorAll('.nav-links a:not(.btn), .mobile-menu a:not(.btn)');
             
             pages.forEach(page => {
                 if (page.id === pageId) page.classList.add('active');
@@ -1518,7 +1386,7 @@
             // Update active state in nav
             navLinks.forEach(link => {
                 const onClickAttr = link.getAttribute('onclick') || '';
-                if (onClickAttr.includes(pageId)) {
+                if (onClickAttr.includes("'" + pageId + "'") && !onClickAttr.includes("'home-page', '")) {
                     link.setAttribute('aria-current', 'page');
                 } else {
                     link.removeAttribute('aria-current');
@@ -1553,14 +1421,6 @@
                 banner.style.display = 'none';
                 gtag('event', 'cookie_consent', { event_category: 'Compliance', event_label: 'accepted' });
             });
-
-            // Adjust banner layout for mobile
-            if (window.innerWidth < 640) {
-                const inner = banner.querySelector('div > div');
-                inner.style.flexDirection = 'column';
-                inner.style.alignItems = 'flex-start';
-                inner.style.gap = '1rem';
-            }
         });
     </script>
     <script>
